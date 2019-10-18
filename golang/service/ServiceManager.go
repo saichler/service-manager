@@ -22,7 +22,7 @@ func NewServiceManager() (*ServiceManager, error) {
 		return nil, e
 	}
 	sm.node = node
-	sm.console = console.NewConsole(node.Port()-10000)
+	sm.console,_ = console.NewConsole(node.Port()-10000)
 	return sm, nil
 }
 
