@@ -9,12 +9,12 @@ import (
 )
 
 type Shutdown struct {
-	sm IServiceManager
+	service IService
 }
 
-func NewShutdown(sm IServiceManager) *Shutdown {
+func NewShutdown(sm IService) *Shutdown {
 	sd := &Shutdown{}
-	sd.sm = sm
+	sd.service = sm
 	return sd
 }
 
@@ -28,10 +28,10 @@ func (c *Shutdown) Usage() string {
 	return "shutdown"
 }
 func (c *Shutdown) ConsoleId() *ConsoleId {
-	return c.sm.ConsoleId()
+	return c.service.ConsoleId()
 }
-func (c *Shutdown) HandleCommand(command Command, args []string, conn net.Conn) (string, *ConsoleId) {
-	Write("Are you sure you want to shutdown "+c.sm.ConsoleId().String()+" (yes/no)?", conn)
+func (c *Shutdown) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+	Write("Are you sure you want to shutdown "+c.service.ServiceManager().ConsoleId().String()+" (yes/no)?", conn)
 	reply, _ := Read(conn)
 	reply = strings.ToLower(reply)
 	for reply != "no" && reply != "yes" {
@@ -40,7 +40,8 @@ func (c *Shutdown) HandleCommand(command Command, args []string, conn net.Conn) 
 		reply = strings.ToLower(reply)
 	}
 	if reply == "yes" {
-		defer c.sm.Shutdown()
+		c.service.ServiceManager().Publish("Shutdown", c.service, []byte("Shutdown"))
+		defer c.service.ServiceManager().Shutdown()
 		return "Shutting Down...", nil
 	}
 	return "Canceled Shutdown.", nil

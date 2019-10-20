@@ -1,10 +1,10 @@
 package main
 
-import "github.com/saichler/service-manager/golang/service"
+import "github.com/saichler/service-manager/golang/service-manager"
 
 func main() {
-	serviceManager,e:=service.NewServiceManager()
-	if e!=nil {
+	serviceManager, e := service_manager.NewServiceManager()
+	if e != nil {
 		return
 	}
 	serviceManager.WaitForShutdown()
