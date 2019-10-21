@@ -10,8 +10,6 @@ type IService interface {
 	ID() uint16
 	ConsoleId() *ConsoleId
 	ServiceManager() IServiceManager
-	Init(IServiceManager, uint16, *ConsoleId)
-	Handle(message *Message)
-	Start()
+	Init(IServiceManager, uint16, *ServiceID, *ConsoleId) []IMessageHandler
 	ServiceID() *ServiceID
 }

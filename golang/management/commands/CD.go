@@ -63,11 +63,18 @@ func (c *CD) handleServiceManager(command Command, args []string, conn net.Conn,
 	}
 	serviceID = strings.ToLower(serviceID)
 	services := c.sm.Services()
+	var subset IService
 	for _, service := range services {
 		id := strings.ToLower(service.Topic() + "-" + strconv.Itoa(int(service.ID())))
 		if id == serviceID {
 			return "", service.ConsoleId()
 		}
+		if len(serviceID) < len(id) && id[0:len(serviceID)] == serviceID {
+			subset = service
+		}
+	}
+	if subset != nil {
+		return "", subset.ConsoleId()
 	}
 	return "Unknown service " + serviceID, nil
 }

@@ -33,7 +33,7 @@ func (c *LS) HandleCommand(command Command, args []string, conn net.Conn, id *Co
 	buff := bytes.Buffer{}
 	services := c.sm.Services()
 	for _, service := range services {
-		buff.WriteString(service.ConsoleId().String())
+		buff.WriteString(service.ConsoleId().Key())
 		buff.WriteString("\n")
 	}
 	return buff.String(), nil

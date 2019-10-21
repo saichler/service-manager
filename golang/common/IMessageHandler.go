@@ -7,5 +7,6 @@ import (
 type IMessageHandler interface {
 	Send()
 	Handle(message *Message)
+	Topic() string
 	Message() *Message
 }

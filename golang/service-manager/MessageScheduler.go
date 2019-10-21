@@ -35,7 +35,7 @@ func (sm *ServiceManager) ScheduleMessage(handler common.IMessageHandler, interv
 }
 
 func (sm *ServiceManager) runScheduler() {
-	for sm.node.Running() {
+	for sm.active {
 		sm.msgScheduler.mtx.Lock()
 		for _, entry := range sm.msgScheduler.schedules {
 			if time.Now().Unix() > entry.last+entry.interval {

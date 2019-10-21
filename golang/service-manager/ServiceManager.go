@@ -1,6 +1,7 @@
 package service_manager
 
 import (
+	"errors"
 	. "github.com/saichler/console/golang/console"
 	"github.com/saichler/console/golang/console/commands"
 	. "github.com/saichler/messaging/golang/net/netnode"
@@ -9,27 +10,30 @@ import (
 	commands2 "github.com/saichler/service-manager/golang/management/commands"
 	"github.com/saichler/service-manager/golang/management/service"
 	. "github.com/saichler/utils/golang"
+	"plugin"
 	"strconv"
 	"sync"
 	"time"
 )
 
 type ServiceManager struct {
-	cid          *commands.ConsoleId
-	node         *NetworkNode
-	console      *Console
-	containers   map[string]*ServiceContainer
-	shutdownMtx  *sync.Cond
-	mtx          *sync.Mutex
-	inbox        *PriorityQueue
-	msgScheduler *MessageScheduler
+	cid           *commands.ConsoleId
+	node          *NetworkNode
+	console       *Console
+	containers    map[string]*ServiceContainer
+	containersMtx *sync.Mutex
+	shutdownMtx   *sync.Cond
+	inbox         *PriorityQueue
+	msgScheduler  *MessageScheduler
+	active        bool
 }
 
 func NewServiceManager() (*ServiceManager, error) {
 	sm := &ServiceManager{}
-	sm.mtx = &sync.Mutex{}
-	sm.inbox = NewPriorityQueue()
+	sm.active = true
 	sm.containers = make(map[string]*ServiceContainer)
+	sm.containersMtx = &sync.Mutex{}
+	sm.inbox = NewPriorityQueue()
 	sm.msgScheduler = newMessageScheduler()
 	node, e := NewNetworkNode(sm)
 	if e != nil {
@@ -51,19 +55,20 @@ func NewServiceManager() (*ServiceManager, error) {
 	go sm.runScheduler()
 
 	sm.AddService(&service.ManagementService{})
-
+	sm.LoadService("/home/saichler/datasand/src/github.com/saichler/service-manager/golang/file-manager/plugin/FileService.so")
 	return sm, nil
 }
 
 func (sm *ServiceManager) AddService(service common.IService) {
-	sm.mtx.Lock()
-	defer sm.mtx.Unlock()
+	sm.containersMtx.Lock()
 	container, ok := sm.containers[service.Topic()]
 	if !ok {
 		container = NewServiceContainer(service.Topic())
 		sm.containers[service.Topic()] = container
 	}
+	sm.containersMtx.Unlock()
 	container.AddService(service, sm)
+	sm.console.RegisterCommand(commands2.NewCD(service))
 }
 
 func (sm *ServiceManager) HandleMessage(message *Message) {
@@ -80,6 +85,7 @@ func (sm *ServiceManager) WaitForShutdown() {
 }
 
 func (sm *ServiceManager) Shutdown() {
+	sm.active = false
 	go sm.shutdown()
 }
 
@@ -100,10 +106,15 @@ func (sm *ServiceManager) Console() *Console {
 }
 
 func (sm *ServiceManager) Services() []common.IService {
-	sm.mtx.Lock()
-	defer sm.mtx.Unlock()
+	containers := make([]*ServiceContainer, 0)
+	sm.containersMtx.Lock()
+	for _, container := range sm.containers {
+		containers = append(containers, container)
+	}
+	sm.containersMtx.Unlock()
+
 	list := make([]common.IService, 0)
-	for _, sc := range sm.containers {
+	for _, sc := range containers {
 		scs := sc.Services()
 		list = append(list, scs...)
 	}
@@ -124,8 +135,8 @@ func (sm *ServiceManager) Publish(topic string, service common.IService, data []
 	return nil
 }
 
-func (sm *ServiceManager) NewMessage(topic string, source common.IService, destination *ServiceID, data []byte) *Message {
-	return sm.node.NewMessage(source.ServiceID(), destination, source.ServiceID(), topic, 0, data)
+func (sm *ServiceManager) NewMessage(msgTopic string, source common.IService, destination *ServiceID, data []byte) *Message {
+	return sm.node.NewMessage(source.ServiceID(), destination, source.ServiceID(), msgTopic, 0, data)
 }
 
 func (sm *ServiceManager) Send(topic string, source common.IService, destination *ServiceID, data []byte) error {
@@ -139,4 +150,28 @@ func (sm *ServiceManager) Send(topic string, source common.IService, destination
 
 func (sm *ServiceManager) Uplink(ip string) {
 	sm.node.Uplink(ip)
+}
+
+func (sm *ServiceManager) LoadService(filename string) error {
+	servicePlugin, e := plugin.Open(filename)
+	if e != nil {
+		Error("Unable to load serivce plugin:", e)
+		return e
+	}
+	svr, e := servicePlugin.Lookup("Service")
+	if e != nil {
+		Error("Unable to find ServiceInstance in the library " + filename)
+		Error("Make sure you have: var ServiceInstance Service = &<your service struct>{}")
+		return e
+	}
+
+	servicePtr, ok := svr.(*common.IService)
+	if !ok {
+		msg := "Service is not of type IService, please check that it implements IService and that Service is a pointer."
+		Error(msg)
+		return errors.New(msg)
+	}
+	service := *servicePtr
+	sm.AddService(service)
+	return nil
 }
