@@ -2,7 +2,6 @@ package service_manager
 
 import (
 	"github.com/saichler/messaging/golang/net/protocol"
-	. "github.com/saichler/service-manager/golang/common"
 	. "github.com/saichler/utils/golang"
 )
 

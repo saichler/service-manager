@@ -1,20 +1,26 @@
-package service
+package message_handlers
 
 import (
 	"github.com/saichler/messaging/golang/net/protocol"
 	"github.com/saichler/service-manager/golang/management/model"
+	. "github.com/saichler/service-manager/golang/management/service"
 	utils "github.com/saichler/utils/golang"
 )
 
 type PingMH struct {
 	ms   *ManagementService
 	ping *protocol.Message
+	hash string
 }
 
 func NewPingMH(ms *ManagementService) *PingMH {
 	ping := &PingMH{}
 	ping.ms = ms
 	return ping
+}
+
+func (m *PingMH) Init() {
+	m.ms.ServiceManager().ScheduleMessage(m, 10, 0)
 }
 
 func (m *PingMH) Send() {
@@ -26,24 +32,29 @@ func (m *PingMH) Topic() string {
 }
 
 func (m *PingMH) Message() *protocol.Message {
-	dest := protocol.NewServiceID(protocol.NetConfig.PublishID(), m.ms.Topic(), m.ms.id)
-	return m.ms.sm.NewMessage(m.Topic(), m.ms, dest, m.inventory())
+	dest := protocol.NewServiceID(protocol.NetConfig.PublishID(), m.ms.Topic(), m.ms.ID())
+	return m.ms.ServiceManager().NewMessage(m.Topic(), m.ms, dest, m.inventory())
 }
 
 func (m *PingMH) Handle(message *protocol.Message) {
 	inv := &model.Inventory{}
 	inv.UnMarshal(message.Data())
-	utils.Info("Reveived Inventory From:" + message.Source().String())
-	m.ms.serviceNetwork.AddInventory(inv)
+	utils.Info("Reveived Inventory From:", message.Source().String(), " with:")
+	for _, s := range inv.Services {
+		utils.Info("  ", s.String())
+	}
+	m.ms.ServiceManager().ServiceNetwork().UpdateInventory(inv)
 }
 
 func (m *PingMH) inventory() []byte {
 	inv := &model.Inventory{}
-	inv.SID = m.ms.serviceID
+	inv.SID = m.ms.ServiceID()
 	services := m.ms.ServiceManager().Services()
 	inv.Services = make([]*protocol.ServiceID, 0)
 	for _, service := range services {
 		inv.Services = append(inv.Services, service.ServiceID())
 	}
-	return inv.Marshal()
+	data, hash := inv.Marshal(m.hash)
+	m.hash = hash
+	return data
 }

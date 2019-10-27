@@ -1,7 +1,6 @@
 package service_manager
 
 import (
-	"github.com/saichler/service-manager/golang/common"
 	"sync"
 	"time"
 )
@@ -12,7 +11,7 @@ type MessageScheduler struct {
 }
 
 type MessageSchedulerEntry struct {
-	handler  common.IMessageHandler
+	handler  IMessageHandler
 	interval int64
 	last     int64
 }
@@ -24,7 +23,7 @@ func newMessageScheduler() *MessageScheduler {
 	return ms
 }
 
-func (sm *ServiceManager) ScheduleMessage(handler common.IMessageHandler, interval, initial int64) {
+func (sm *ServiceManager) ScheduleMessage(handler IMessageHandler, interval, initial int64) {
 	entry := &MessageSchedulerEntry{}
 	entry.interval = interval
 	entry.handler = handler

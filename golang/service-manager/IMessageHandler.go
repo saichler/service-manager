@@ -1,4 +1,4 @@
-package common
+package service_manager
 
 import (
 	. "github.com/saichler/messaging/golang/net/protocol"
@@ -9,4 +9,5 @@ type IMessageHandler interface {
 	Handle(message *Message)
 	Topic() string
 	Message() *Message
+	Init()
 }

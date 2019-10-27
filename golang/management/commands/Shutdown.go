@@ -3,7 +3,7 @@ package commands
 import (
 	. "github.com/saichler/console/golang/console"
 	. "github.com/saichler/console/golang/console/commands"
-	. "github.com/saichler/service-manager/golang/common"
+	. "github.com/saichler/service-manager/golang/service-manager"
 	"net"
 	"strings"
 )

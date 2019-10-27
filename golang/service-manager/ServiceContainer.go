@@ -3,7 +3,6 @@ package service_manager
 import (
 	"github.com/saichler/console/golang/console/commands"
 	"github.com/saichler/messaging/golang/net/protocol"
-	. "github.com/saichler/service-manager/golang/common"
 	"strconv"
 	"sync"
 )
@@ -27,16 +26,17 @@ func (sc *ServiceContainer) Topic() string {
 	return sc.topic
 }
 
-func (sc *ServiceContainer) AddService(service IService, serviceManager *ServiceManager) error {
+func (sc *ServiceContainer) AddService(service IService, handlers IServiceMessageHandlers, serviceManager *ServiceManager) error {
 	sc.mtx.Lock()
 	defer sc.mtx.Unlock()
 	sc.nextServiceID++
 	sci := commands.NewConsoleID(service.Topic()+"-"+strconv.Itoa(int(sc.nextServiceID)), serviceManager.cid)
 	sid := protocol.NewServiceID(serviceManager.NetworkID(), service.Topic(), sc.nextServiceID)
-	handlers := service.Init(serviceManager, sc.nextServiceID, sid, sci)
+	service.Init(serviceManager, sc.nextServiceID, sid, sci)
 	sc.serviceInstances[sc.nextServiceID] = newServiceContainerEntry(service)
-	for _, handler := range handlers {
+	for _, handler := range handlers.Handlers(service) {
 		sc.serviceInstances[sc.nextServiceID].RegisterMessageHandler(handler)
+		handler.Init()
 	}
 	sc.serviceInstances[sc.nextServiceID].start()
 	return nil

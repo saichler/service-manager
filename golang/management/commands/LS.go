@@ -3,15 +3,15 @@ package commands
 import (
 	"bytes"
 	. "github.com/saichler/console/golang/console/commands"
-	. "github.com/saichler/service-manager/golang/common"
+	. "github.com/saichler/service-manager/golang/service-manager"
 	"net"
 )
 
 type LS struct {
-	sm IServiceManager
+	sm *ServiceManager
 }
 
-func NewLS(sm IServiceManager) *LS {
+func NewLS(sm *ServiceManager) *LS {
 	sd := &LS{}
 	sd.sm = sm
 	return sd

@@ -30,18 +30,14 @@ func (sm *ServiceManager) processMessage(message *Message) {
 }
 
 func (sm *ServiceManager) handlePublish(message *Message) {
-	sm.containersMtx.Lock()
-	container := sm.containers[message.Destination().Topic()]
-	sm.containersMtx.Unlock()
-	if container != nil {
+	container, ok := sm.containers.Get(message.Destination().Topic()).(*ServiceContainer)
+	if ok {
 		container.publish(message)
 	}
 }
 
 func (sm *ServiceManager) getServiceEntryForMessage(message *Message) (*ServiceContainerEntry, error) {
-	sm.containersMtx.Lock()
-	container, ok := sm.containers[message.Destination().Topic()]
-	sm.containersMtx.Unlock()
+	container, ok := sm.containers.Get(message.Destination().Topic()).(*ServiceContainer)
 	if ok {
 		return container.ServiceContainerEntry(message.Destination().ID()), nil
 	} else {

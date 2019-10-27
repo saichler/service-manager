@@ -1,6 +1,9 @@
 package model
 
-import "sync"
+import (
+	utils "github.com/saichler/utils/golang"
+	"sync"
+)
 
 type ServiceNetwork struct {
 	mtx            *sync.Mutex
@@ -14,9 +17,14 @@ func NewServiceNetwork() *ServiceNetwork {
 	return sn
 }
 
-func (sn *ServiceNetwork) AddInventory(inventory *Inventory) {
+func (sn *ServiceNetwork) UpdateInventory(inventory *Inventory) {
 	sn.mtx.Lock()
 	defer sn.mtx.Unlock()
 	key := inventory.SID.String()
-	sn.serviceNetwork[key] = inventory
+	if len(inventory.Services) > 0 {
+		utils.Info("Updating inventory")
+		sn.serviceNetwork[key] = inventory
+	}
 }
+
+

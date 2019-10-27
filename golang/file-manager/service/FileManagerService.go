@@ -3,13 +3,13 @@ package service
 import (
 	"github.com/saichler/console/golang/console/commands"
 	"github.com/saichler/messaging/golang/net/protocol"
-	"github.com/saichler/service-manager/golang/common"
+	. "github.com/saichler/service-manager/golang/service-manager"
 )
 
 type FileManager struct {
 	id  uint16
 	cid *commands.ConsoleId
-	sm  common.IServiceManager
+	sm  *ServiceManager
 	sid *protocol.ServiceID
 }
 
@@ -25,7 +25,7 @@ func (fm *FileManager) ConsoleId() *commands.ConsoleId {
 	return fm.cid
 }
 
-func (fm *FileManager) ServiceManager() common.IServiceManager {
+func (fm *FileManager) ServiceManager() *ServiceManager {
 	return fm.sm
 }
 
@@ -33,11 +33,9 @@ func (fm *FileManager) ServiceID() *protocol.ServiceID {
 	return fm.sid
 }
 
-func (fm *FileManager) Init(sm common.IServiceManager, id uint16, sid *protocol.ServiceID, cid *commands.ConsoleId) []common.IMessageHandler {
+func (fm *FileManager) Init(sm *ServiceManager, id uint16, sid *protocol.ServiceID, cid *commands.ConsoleId) {
 	fm.sm = sm
 	fm.id = id
 	fm.cid = cid
 	fm.sid = sid
-	handlers := make([]common.IMessageHandler, 0)
-	return handlers
 }

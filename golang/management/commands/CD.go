@@ -2,20 +2,20 @@ package commands
 
 import (
 	. "github.com/saichler/console/golang/console/commands"
-	. "github.com/saichler/service-manager/golang/common"
+	. "github.com/saichler/service-manager/golang/service-manager"
 	"net"
 	"strconv"
 	"strings"
 )
 
 type CD struct {
-	sm IServiceManager
+	sm *ServiceManager
 	sv IService
 }
 
 func NewCD(context interface{}) *CD {
 	sd := &CD{}
-	sm, ok := context.(IServiceManager)
+	sm, ok := context.(*ServiceManager)
 	if ok {
 		sd.sm = sm
 	} else {
