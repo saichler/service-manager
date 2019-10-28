@@ -39,7 +39,7 @@ func (sm *ServiceManager) runScheduler() {
 		for _, entry := range sm.msgScheduler.schedules {
 			if time.Now().Unix() > entry.last+entry.interval {
 				entry.last = time.Now().Unix()
-				sm.node.SendMessage(entry.handler.Message())
+				sm.node.SendMessage(entry.handler.Message(nil, nil, false))
 			}
 		}
 		time.Sleep(time.Second)

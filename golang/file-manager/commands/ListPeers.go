@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	. "github.com/saichler/console/golang/console/commands"
 	. "github.com/saichler/service-manager/golang/file-manager/service"
 	. "github.com/saichler/service-manager/golang/service-manager"
@@ -34,6 +35,11 @@ func (c *ListPeers) ConsoleId() *ConsoleId {
 }
 
 func (c *ListPeers) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
-	c.service.ServiceManager().ServiceNetwork().
-	return "", nil
+	peers := c.service.ServiceManager().ServiceNetwork().GetPeers(c.service.ServiceID())
+	buff := bytes.Buffer{}
+	for _, peer := range peers {
+		buff.WriteString(peer.String())
+		buff.WriteString("\n")
+	}
+	return buff.String(), nil
 }

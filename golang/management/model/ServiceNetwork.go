@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/saichler/messaging/golang/net/protocol"
 	utils "github.com/saichler/utils/golang"
 	"sync"
 )
@@ -27,4 +28,16 @@ func (sn *ServiceNetwork) UpdateInventory(inventory *Inventory) {
 	}
 }
 
-
+func (sn *ServiceNetwork) GetPeers(id *protocol.ServiceID) []*protocol.ServiceID {
+	sn.mtx.Lock()
+	defer sn.mtx.Unlock()
+	result := make([]*protocol.ServiceID, 0)
+	for _, inv := range sn.serviceNetwork {
+		for _, s := range inv.Services {
+			if s.Topic() == id.Topic() && s.String() != id.String() {
+				result = append(result, s)
+			}
+		}
+	}
+	return result
+}

@@ -23,17 +23,13 @@ func (m *PingMH) Init() {
 	m.ms.ServiceManager().ScheduleMessage(m, 10, 0)
 }
 
-func (m *PingMH) Send() {
-	m.ms.ServiceManager().Publish("Inventory", m.ms, m.inventory())
-}
-
 func (m *PingMH) Topic() string {
 	return "Ping"
 }
 
-func (m *PingMH) Message() *protocol.Message {
+func (m *PingMH) Message(destination *protocol.ServiceID, data []byte, isReply bool) *protocol.Message {
 	dest := protocol.NewServiceID(protocol.NetConfig.PublishID(), m.ms.Topic(), m.ms.ID())
-	return m.ms.ServiceManager().NewMessage(m.Topic(), m.ms, dest, m.inventory())
+	return m.ms.ServiceManager().NewMessage(m.Topic(), m.ms, dest, m.inventory(), false)
 }
 
 func (m *PingMH) Handle(message *protocol.Message) {

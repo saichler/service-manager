@@ -103,7 +103,7 @@ func (sm *ServiceManager) NetworkID() *NetworkID {
 
 func (sm *ServiceManager) Publish(topic string, service IService, data []byte) error {
 	dest := NewPublishServiceID(topic)
-	message := sm.node.NewMessage(service.ServiceID(), dest, service.ServiceID(), topic, 0, data)
+	message := sm.node.NewMessage(service.ServiceID(), dest, service.ServiceID(), topic, 0, data, false)
 	e := sm.node.SendMessage(message)
 	if e != nil {
 		return Error("Failed to send message")
@@ -111,12 +111,12 @@ func (sm *ServiceManager) Publish(topic string, service IService, data []byte) e
 	return nil
 }
 
-func (sm *ServiceManager) NewMessage(msgTopic string, source IService, destination *ServiceID, data []byte) *Message {
-	return sm.node.NewMessage(source.ServiceID(), destination, source.ServiceID(), msgTopic, 0, data)
+func (sm *ServiceManager) NewMessage(msgTopic string, source IService, destination *ServiceID, data []byte, isReply bool) *Message {
+	return sm.node.NewMessage(source.ServiceID(), destination, source.ServiceID(), msgTopic, 0, data, isReply)
 }
 
-func (sm *ServiceManager) Send(topic string, source IService, destination *ServiceID, data []byte) error {
-	message := sm.NewMessage(topic, source, destination, data)
+func (sm *ServiceManager) Send(topic string, source IService, destination *ServiceID, data []byte,isReply bool) error {
+	message := sm.NewMessage(topic, source, destination, data,isReply)
 	e := sm.node.SendMessage(message)
 	if e != nil {
 		return Error("Failed to send message")

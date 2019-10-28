@@ -5,9 +5,8 @@ import (
 )
 
 type IMessageHandler interface {
-	Send()
-	Handle(message *Message)
+	Handle(*Message)
 	Topic() string
-	Message() *Message
+	Message(*ServiceID, []byte, bool) *Message
 	Init()
 }
