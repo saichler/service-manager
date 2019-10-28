@@ -15,15 +15,16 @@ import (
 )
 
 type ServiceManager struct {
-	cid            *commands.ConsoleId
-	node           *NetworkNode
-	console        *Console
-	containers     *MapList
-	shutdownMtx    *sync.Cond
-	inbox          *PriorityQueue
-	msgScheduler   *MessageScheduler
-	active         bool
-	serviceNetwork *model.ServiceNetwork
+	cid             *commands.ConsoleId
+	node            *NetworkNode
+	console         *Console
+	containers      *MapList
+	shutdownMtx     *sync.Cond
+	inbox           *PriorityQueue
+	msgScheduler    *MessageScheduler
+	active          bool
+	serviceNetwork  *model.ServiceNetwork
+	pendingRequests *Map
 }
 
 func NewServiceManager() (*ServiceManager, error) {
@@ -31,6 +32,7 @@ func NewServiceManager() (*ServiceManager, error) {
 	sm.serviceNetwork = model.NewServiceNetwork()
 	sm.active = true
 	sm.containers = NewMapList()
+	sm.pendingRequests = NewMap()
 	sm.inbox = NewPriorityQueue()
 	sm.msgScheduler = newMessageScheduler()
 	node, e := NewNetworkNode(sm)
@@ -115,8 +117,17 @@ func (sm *ServiceManager) NewMessage(msgTopic string, source IService, destinati
 	return sm.node.NewMessage(source.ServiceID(), destination, source.ServiceID(), msgTopic, 0, data, isReply)
 }
 
-func (sm *ServiceManager) Send(topic string, source IService, destination *ServiceID, data []byte,isReply bool) error {
-	message := sm.NewMessage(topic, source, destination, data,isReply)
+func (sm *ServiceManager) Reply(message *Message, data []byte) error {
+	msg := NewMessage(message.Destination(), message.Source(), message.OriginalSource(), message.MessageID(), message.Topic(), message.Priority(), data, true)
+	e := sm.node.SendMessage(msg)
+	if e != nil {
+		return Error("Failed to send message")
+	}
+	return nil
+}
+
+func (sm *ServiceManager) Send(topic string, source IService, destination *ServiceID, data []byte, isReply bool) error {
+	message := sm.NewMessage(topic, source, destination, data, isReply)
 	e := sm.node.SendMessage(message)
 	if e != nil {
 		return Error("Failed to send message")

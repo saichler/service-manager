@@ -4,6 +4,7 @@ import (
 	"github.com/saichler/messaging/golang/net/protocol"
 	"github.com/saichler/service-manager/golang/management/model"
 	. "github.com/saichler/service-manager/golang/management/service"
+	. "github.com/saichler/service-manager/golang/service-manager"
 	utils "github.com/saichler/utils/golang"
 )
 
@@ -13,9 +14,9 @@ type PingMH struct {
 	hash string
 }
 
-func NewPingMH(ms *ManagementService) *PingMH {
+func NewPingMH(service IService) *PingMH {
 	ping := &PingMH{}
-	ping.ms = ms
+	ping.ms = service.(*ManagementService)
 	return ping
 }
 
@@ -53,4 +54,8 @@ func (m *PingMH) inventory() []byte {
 	data, hash := inv.Marshal(m.hash)
 	m.hash = hash
 	return data
+}
+
+func (m *PingMH) Request(data interface{}, destination *protocol.ServiceID) interface{}{
+	return nil
 }

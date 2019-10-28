@@ -2,18 +2,29 @@ package commands
 
 import (
 	"github.com/saichler/console/golang/console/commands"
-	message_handlers "github.com/saichler/service-manager/golang/file-manager/message-handlers"
 	commands2 "github.com/saichler/service-manager/golang/management/commands"
 	. "github.com/saichler/service-manager/golang/service-manager"
 )
 
 type FileManagerCommands struct {
+	commands map[string]commands.Command
 }
 
-func (mcmd *FileManagerCommands) Commands(service IService) []commands.Command {
+func (c *FileManagerCommands) Init(service IService, mh IServiceMessageHandlers) {
+	c.commands = make(map[string]commands.Command)
+	c.addCommand(commands2.NewCD(service))
+	c.addCommand(NewListPeers(service))
+	c.addCommand(NewListFiels(service, mh.Handler("ListFiles")))
+}
+
+func (c *FileManagerCommands) addCommand(cmd commands.Command) {
+	c.commands[cmd.Command()] = cmd
+}
+
+func (c *FileManagerCommands) Commands() []commands.Command {
 	result := make([]commands.Command, 0)
-	result = append(result, commands2.NewCD(service))
-	result = append(result, NewListPeers(service))
-	result = append(result, NewListFiels(service, &message_handlers.ListFiles{}))
+	for _, cmd := range c.commands {
+		result = append(result, cmd)
+	}
 	return result
 }

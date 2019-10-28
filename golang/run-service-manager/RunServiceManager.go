@@ -15,7 +15,16 @@ func main() {
 
 	serviceManager.Console().RegisterCommand(commands.NewLS(serviceManager))
 	serviceManager.Console().RegisterCommand(commands.NewCD(serviceManager))
-	serviceManager.AddService(&service.ManagementService{}, &commands.ManagementCommands{}, &message_handlers.ManagementHandlers{})
+	serviceManager.AddService(NewService())
 	serviceManager.LoadService("/home/saichler/datasand/src/github.com/saichler/service-manager/golang/file-manager/plugin/FileService.so")
 	serviceManager.WaitForShutdown()
+}
+
+func NewService() (service_manager.IService, service_manager.IServiceCommands, service_manager.IServiceMessageHandlers) {
+	s := &service.ManagementService{}
+	h := &message_handlers.ManagementHandlers{}
+	h.Init(s)
+	c := &commands.ManagementCommands{}
+	c.Init(s, h)
+	return s, c, h
 }

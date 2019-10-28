@@ -13,7 +13,7 @@ func (sm *ServiceManager) AddService(service IService, commands IServiceCommands
 		sm.containers.Put(service.Topic(), container)
 	}
 	container.AddService(service, handlers, sm)
-	for _, cmd := range commands.Commands(service) {
+	for _, cmd := range commands.Commands() {
 		sm.console.RegisterCommand(cmd)
 	}
 }

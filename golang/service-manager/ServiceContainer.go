@@ -34,7 +34,7 @@ func (sc *ServiceContainer) AddService(service IService, handlers IServiceMessag
 	sid := protocol.NewServiceID(serviceManager.NetworkID(), service.Topic(), sc.nextServiceID)
 	service.Init(serviceManager, sc.nextServiceID, sid, sci)
 	sc.serviceInstances[sc.nextServiceID] = newServiceContainerEntry(service)
-	for _, handler := range handlers.Handlers(service) {
+	for _, handler := range handlers.Handlers() {
 		sc.serviceInstances[sc.nextServiceID].RegisterMessageHandler(handler)
 		handler.Init()
 	}

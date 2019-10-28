@@ -1,16 +1,19 @@
 package message_handlers
 
-import . "github.com/saichler/service-manager/golang/service-manager"
+import (
+	. "github.com/saichler/service-manager/golang/service-manager"
+)
 
 type FileManagerHandlers struct {
 	handlers map[string]IMessageHandler
 }
 
-func (mh *FileManagerHandlers) Handlers(service IService) []IMessageHandler {
-	if mh.handlers == nil {
-		mh.handlers = make(map[string]IMessageHandler)
-		mh.addHanlder(&ListFiles{})
-	}
+func (mh *FileManagerHandlers) Init(service IService) {
+	mh.handlers = make(map[string]IMessageHandler)
+	mh.addHanlder(NewListFilesMH(service))
+}
+
+func (mh *FileManagerHandlers) Handlers() []IMessageHandler {
 	result := make([]IMessageHandler, 0)
 	for _, h := range mh.handlers {
 		result = append(result, h)

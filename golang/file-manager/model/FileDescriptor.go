@@ -27,6 +27,7 @@ func (fd *FileDescriptor) Files() []*FileDescriptor {
 
 func (fd *FileDescriptor) Marshal() []byte {
 	bs := utils.NewByteSlice()
+	fd.marshal(bs)
 	return bs.Data()
 }
 

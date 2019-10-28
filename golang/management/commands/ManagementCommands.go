@@ -6,13 +6,26 @@ import (
 )
 
 type ManagementCommands struct {
+	commands map[string]commands.Command
 }
 
-func (mcmd *ManagementCommands) Commands(service IService) []commands.Command {
+func (c *ManagementCommands) Init(service IService, mh IServiceMessageHandlers) {
+	c.commands = make(map[string]commands.Command)
+	c.addCommand(NewShutdown(service))
+	c.addCommand(NewUplink(service))
+	c.addCommand(NewLoadService(service))
+	c.addCommand(NewCD(service))
+
+}
+
+func (c *ManagementCommands) addCommand(cmd commands.Command) {
+	c.commands[cmd.Command()] = cmd
+}
+
+func (c *ManagementCommands) Commands() []commands.Command {
 	result := make([]commands.Command, 0)
-	result = append(result, NewShutdown(service))
-	result = append(result, NewUplink(service))
-	result = append(result, NewLoadService(service))
-	result = append(result, NewCD(service))
+	for _, cmd := range c.commands {
+		result = append(result, cmd)
+	}
 	return result
 }

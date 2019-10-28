@@ -14,10 +14,21 @@ type IService interface {
 	ServiceID() *ServiceID
 }
 
-type IServiceCommands interface {
-	Commands(IService) []Command
+type IServiceMessageHandlers interface {
+	Init(IService)
+	Handler(string) IMessageHandler
+	Handlers() []IMessageHandler
 }
 
-type IServiceMessageHandlers interface {
-	Handlers(IService) []IMessageHandler
+type IServiceCommands interface {
+	Init(IService, IServiceMessageHandlers)
+	Commands() []Command
+}
+
+type IMessageHandler interface {
+	Handle(*Message)
+	Topic() string
+	Message(*ServiceID, []byte, bool) *Message
+	Init()
+	Request(interface{}, *ServiceID) interface{}
 }
