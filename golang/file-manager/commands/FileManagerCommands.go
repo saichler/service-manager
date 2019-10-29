@@ -15,6 +15,7 @@ func (c *FileManagerCommands) Init(service IService, mh IServiceMessageHandlers)
 	c.addCommand(commands2.NewCD(service))
 	c.addCommand(NewListPeers(service))
 	c.addCommand(NewRlsCMD(service, mh.Handler("RLS")))
+	c.addCommand(NewCpCMD(service, mh.Handler("RLS")))
 }
 
 func (c *FileManagerCommands) addCommand(cmd commands.Command) {

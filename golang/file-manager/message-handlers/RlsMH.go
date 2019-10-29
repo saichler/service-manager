@@ -30,9 +30,6 @@ func (msgHandler *RlsMH) Message(destination *ServiceID, data []byte, isReply bo
 }
 
 func (msgHandler *RlsMH) Handle(message *Message) {
-	if message.IsReply() {
-		panic("rrrrrr")
-	}
 	dir := string(message.Data())
 	fd, _ := model.Create(dir, 1, 0)
 	data := fd.Marshal()
