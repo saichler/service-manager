@@ -36,9 +36,11 @@ func (m *PingMH) Message(destination *protocol.ServiceID, data []byte, isReply b
 func (m *PingMH) Handle(message *protocol.Message) {
 	inv := &model.Inventory{}
 	inv.UnMarshal(message.Data())
-	utils.Info("Reveived Inventory From:", message.Source().String(), " with:")
-	for _, s := range inv.Services {
-		utils.Info("  ", s.String())
+	if len(inv.Services) > 0 {
+		utils.Info("Reveived Inventory From:", message.Source().String(), " with:")
+		for _, s := range inv.Services {
+			utils.Info("  ", s.String())
+		}
 	}
 	m.ms.ServiceManager().ServiceNetwork().UpdateInventory(inv)
 }
@@ -56,6 +58,6 @@ func (m *PingMH) inventory() []byte {
 	return data
 }
 
-func (m *PingMH) Request(data interface{}, destination *protocol.ServiceID) interface{}{
+func (m *PingMH) Request(data interface{}, destination *protocol.ServiceID) interface{} {
 	return nil
 }

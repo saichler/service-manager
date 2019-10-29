@@ -10,13 +10,13 @@ import (
 	"net"
 )
 
-type ListFiledCMD struct {
+type RlsCMD struct {
 	service *FileManager
 	mh      IMessageHandler
 }
 
-func NewListFiels(sm IService, mh IMessageHandler) *ListFiledCMD {
-	sd := &ListFiledCMD{}
+func NewRlsCMD(sm IService, mh IMessageHandler) *RlsCMD {
+	sd := &RlsCMD{}
 	sd.service = sm.(*FileManager)
 	sd.mh = mh
 	if mh == nil {
@@ -25,30 +25,32 @@ func NewListFiels(sm IService, mh IMessageHandler) *ListFiledCMD {
 	return sd
 }
 
-func (c *ListFiledCMD) Command() string {
-	return "list-files"
+func (c *RlsCMD) Command() string {
+	return "rls"
 }
 
-func (c *ListFiledCMD) Description() string {
+func (c *RlsCMD) Description() string {
 	return "List a peer files at a location"
 }
 
-func (c *ListFiledCMD) Usage() string {
-	return "list-files <path>"
+func (c *RlsCMD) Usage() string {
+	return "rls <serviceid> <path>"
 }
 
-func (c *ListFiledCMD) ConsoleId() *ConsoleId {
+func (c *RlsCMD) ConsoleId() *ConsoleId {
 	return c.service.ConsoleId()
 }
 
-func (c *ListFiledCMD) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (c *RlsCMD) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 	dest := &protocol.ServiceID{}
-	sid := args[0] + " " + args[1]
-	e := dest.Parse(sid)
+	if len(args) < 2 {
+		return c.Usage(), nil
+	}
+	e := dest.Parse(args[0])
 	if e != nil {
 		return "Invalid service id format:" + args[0], nil
 	}
-	response := c.mh.Request("/tmp", dest)
+	response := c.mh.Request(args[1], dest)
 	fd := response.(*model.FileDescriptor)
 	buff := bytes.Buffer{}
 	for _, file := range fd.Files() {

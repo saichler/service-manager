@@ -63,7 +63,7 @@ func (fd *FileDescriptor) unmarshal(bs *utils.ByteSlice) {
 	}
 }
 
-func Create(path string) (*FileDescriptor, error) {
+func Create(path string, dept, current int) (*FileDescriptor, error) {
 	fi, e := os.Stat(path)
 	if e != nil {
 		return nil, e
@@ -71,12 +71,13 @@ func Create(path string) (*FileDescriptor, error) {
 	fd := &FileDescriptor{}
 	fd.name = fi.Name()
 	fd.size = fi.Size()
-	if fi.IsDir() {
+	if fi.IsDir() && current < dept {
 		fd.files = make([]*FileDescriptor, 0)
 		files, e := ioutil.ReadDir(path)
 		if e == nil {
+			current++
 			for _, file := range files {
-				fdChild, e := Create(path + "/" + file.Name())
+				fdChild, e := Create(path+"/"+file.Name(), dept, current)
 				if e == nil {
 					fd.files = append(fd.files, fdChild)
 				}
