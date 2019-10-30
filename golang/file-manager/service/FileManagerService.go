@@ -7,10 +7,12 @@ import (
 )
 
 type FileManager struct {
-	id  uint16
-	cid *commands.ConsoleId
-	sm  *ServiceManager
-	sid *protocol.ServiceID
+	id      uint16
+	cid     *commands.ConsoleId
+	sm      *ServiceManager
+	sid     *protocol.ServiceID
+	peerSID *protocol.ServiceID
+	peerDir string
 }
 
 func (fm *FileManager) Topic() string {
@@ -38,4 +40,22 @@ func (fm *FileManager) Init(sm *ServiceManager, id uint16, sid *protocol.Service
 	fm.id = id
 	fm.cid = cid
 	fm.sid = sid
+	fm.peerSID = sid
+	fm.peerDir = "/tmp"
+}
+
+func (fm *FileManager) PeerServiceID() *protocol.ServiceID {
+	return fm.peerSID
+}
+
+func (fm *FileManager) SetPeerServiceID(sid *protocol.ServiceID) {
+	fm.peerSID = sid
+}
+
+func (fm *FileManager) PeerDir() string {
+	return fm.peerDir
+}
+
+func (fm *FileManager) SetPeerDir(dir string) {
+	fm.peerDir = dir
 }

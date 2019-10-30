@@ -2,7 +2,6 @@ package commands
 
 import (
 	"github.com/saichler/console/golang/console/commands"
-	commands2 "github.com/saichler/service-manager/golang/management/commands"
 	. "github.com/saichler/service-manager/golang/service-manager"
 )
 
@@ -12,14 +11,19 @@ type FileManagerCommands struct {
 
 func (c *FileManagerCommands) Init(service IService, mh IServiceMessageHandlers) {
 	c.commands = make(map[string]commands.Command)
-	c.addCommand(commands2.NewCD(service))
 	c.addCommand(NewListPeers(service))
-	c.addCommand(NewRlsCMD(service, mh.Handler("RLS")))
-	c.addCommand(NewCpCMD(service, mh.Handler("RLS")))
+	c.addCommand(NewLS(service, mh.Handler("ls")))
+	c.addCommand(NewCD(service, mh.Handler("ls")))
+	c.addCommand(NewCpCMD(service, mh.Handler("ls")))
+	//c.addAlias(commands2.NewCD(service), "lcd")
 }
 
 func (c *FileManagerCommands) addCommand(cmd commands.Command) {
 	c.commands[cmd.Command()] = cmd
+}
+
+func (c *FileManagerCommands) addAlias(cmd commands.Command, alias string) {
+	c.commands[alias] = cmd
 }
 
 func (c *FileManagerCommands) Commands() []commands.Command {
