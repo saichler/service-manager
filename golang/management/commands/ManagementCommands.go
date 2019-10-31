@@ -22,10 +22,6 @@ func (c *ManagementCommands) addCommand(cmd commands.Command) {
 	c.commands[cmd.Command()] = cmd
 }
 
-func (c *ManagementCommands) Commands() []commands.Command {
-	result := make([]commands.Command, 0)
-	for _, cmd := range c.commands {
-		result = append(result, cmd)
-	}
-	return result
+func (c *ManagementCommands) Commands() map[string]commands.Command {
+	return c.commands
 }

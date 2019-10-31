@@ -8,8 +8,10 @@ import (
 
 type FileDescriptor struct {
 	name  string
+	path  string
 	size  int64
 	hash  string
+	part  int
 	files []*FileDescriptor
 }
 
@@ -17,8 +19,20 @@ func (fd *FileDescriptor) Name() string {
 	return fd.name
 }
 
+func (fd *FileDescriptor) Path() string {
+	return fd.path
+}
+
 func (fd *FileDescriptor) Size() int64 {
 	return fd.size
+}
+
+func (fd *FileDescriptor) Part() int {
+	return fd.part
+}
+
+func (fd *FileDescriptor) SetPart(p int) {
+	fd.part = p
 }
 
 func (fd *FileDescriptor) Files() []*FileDescriptor {
@@ -33,8 +47,10 @@ func (fd *FileDescriptor) Marshal() []byte {
 
 func (fd *FileDescriptor) marshal(bs *utils.ByteSlice) {
 	bs.AddString(fd.name)
+	bs.AddString(fd.path)
 	bs.AddInt64(fd.size)
 	bs.AddString(fd.hash)
+	bs.AddInt(fd.part)
 	if fd.files == nil {
 		bs.AddInt(0)
 	} else {
@@ -52,8 +68,10 @@ func (fd *FileDescriptor) Unmarshal(data []byte) {
 
 func (fd *FileDescriptor) unmarshal(bs *utils.ByteSlice) {
 	fd.name = bs.GetString()
+	fd.path = bs.GetString()
 	fd.size = bs.GetInt64()
 	fd.hash = bs.GetString()
+	fd.part = bs.GetInt()
 	fd.files = make([]*FileDescriptor, 0)
 	size := bs.GetInt()
 	for i := 0; i < size; i++ {
@@ -71,6 +89,9 @@ func Create(path string, dept, current int) (*FileDescriptor, error) {
 	fd := &FileDescriptor{}
 	fd.name = fi.Name()
 	fd.size = fi.Size()
+	if current == 0 {
+		fd.path = path
+	}
 	if fi.IsDir() && current < dept {
 		fd.files = make([]*FileDescriptor, 0)
 		files, e := ioutil.ReadDir(path)
@@ -83,6 +104,8 @@ func Create(path string, dept, current int) (*FileDescriptor, error) {
 				}
 			}
 		}
+	} else {
+		fd.part = int(fd.size/MAX_PART_SIZE) + 1
 	}
 	return fd, nil
 }

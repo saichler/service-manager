@@ -22,7 +22,7 @@ type IServiceMessageHandlers interface {
 
 type IServiceCommands interface {
 	Init(IService, IServiceMessageHandlers)
-	Commands() []Command
+	Commands() map[string]Command
 }
 
 type IMessageHandler interface {

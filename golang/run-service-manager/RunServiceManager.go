@@ -13,8 +13,8 @@ func main() {
 		return
 	}
 
-	serviceManager.Console().RegisterCommand(commands.NewLS(serviceManager))
-	serviceManager.Console().RegisterCommand(commands.NewCD(serviceManager))
+	serviceManager.Console().RegisterCommand(commands.NewLS(serviceManager),"ls")
+	serviceManager.Console().RegisterCommand(commands.NewCD(serviceManager),"cd")
 	serviceManager.AddService(NewService())
 	serviceManager.LoadService("/home/saichler/datasand/src/github.com/saichler/service-manager/golang/file-manager/plugin/FileService.so")
 	serviceManager.WaitForShutdown()

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/saichler/console/golang/console/commands"
+	commands2 "github.com/saichler/service-manager/golang/management/commands"
 	. "github.com/saichler/service-manager/golang/service-manager"
 )
 
@@ -14,8 +15,8 @@ func (c *FileManagerCommands) Init(service IService, mh IServiceMessageHandlers)
 	c.addCommand(NewListPeers(service))
 	c.addCommand(NewLS(service, mh.Handler("ls")))
 	c.addCommand(NewCD(service, mh.Handler("ls")))
-	c.addCommand(NewCpCMD(service, mh.Handler("ls")))
-	//c.addAlias(commands2.NewCD(service), "lcd")
+	c.addCommand(NewCpCMD(service, mh.Handler("ls"), mh.Handler("cp")))
+	c.addAlias(commands2.NewCD(service), "lcd")
 }
 
 func (c *FileManagerCommands) addCommand(cmd commands.Command) {
@@ -26,10 +27,6 @@ func (c *FileManagerCommands) addAlias(cmd commands.Command, alias string) {
 	c.commands[alias] = cmd
 }
 
-func (c *FileManagerCommands) Commands() []commands.Command {
-	result := make([]commands.Command, 0)
-	for _, cmd := range c.commands {
-		result = append(result, cmd)
-	}
-	return result
+func (c *FileManagerCommands) Commands() map[string]commands.Command {
+	return c.commands
 }

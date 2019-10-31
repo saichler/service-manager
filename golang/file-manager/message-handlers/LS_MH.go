@@ -32,6 +32,9 @@ func (msgHandler *LS_MH) Message(destination *ServiceID, data []byte, isReply bo
 func (msgHandler *LS_MH) Handle(message *Message) {
 	dir := string(message.Data())
 	fd, _ := model.Create(dir, 1, 0)
+	if fd == nil {
+		fd = &model.FileDescriptor{}
+	}
 	data := fd.Marshal()
 	msgHandler.fs.ServiceManager().Reply(message, data)
 }

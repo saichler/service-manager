@@ -11,6 +11,7 @@ type FileManagerHandlers struct {
 func (mh *FileManagerHandlers) Init(service IService) {
 	mh.handlers = make(map[string]IMessageHandler)
 	mh.addHanlder(NewRlsMH(service))
+	mh.addHanlder(NewCpMH(service))
 }
 
 func (mh *FileManagerHandlers) Handlers() []IMessageHandler {
