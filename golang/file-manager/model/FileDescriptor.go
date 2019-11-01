@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/saichler/security"
 	utils "github.com/saichler/utils/golang"
 	"io/ioutil"
 	"os"
@@ -66,6 +67,16 @@ func (fd *FileDescriptor) Unmarshal(data []byte) {
 	fd.unmarshal(bs)
 }
 
+func (fd *FileDescriptor) Clone() *FileDescriptor {
+	clone := &FileDescriptor{}
+	clone.name = fd.name
+	clone.hash = fd.hash
+	clone.path = fd.path
+	clone.size = fd.size
+	clone.part = fd.part
+	return clone
+}
+
 func (fd *FileDescriptor) unmarshal(bs *utils.ByteSlice) {
 	fd.name = bs.GetString()
 	fd.path = bs.GetString()
@@ -106,6 +117,7 @@ func Create(path string, dept, current int) (*FileDescriptor, error) {
 		}
 	} else {
 		fd.part = int(fd.size/MAX_PART_SIZE) + 1
+		fd.hash, _ = security.FileHash256(path)
 	}
 	return fd, nil
 }
