@@ -20,6 +20,10 @@ func (fd *FileDescriptor) Name() string {
 	return fd.name
 }
 
+func (fd *FileDescriptor) Hash() string {
+	return fd.hash
+}
+
 func (fd *FileDescriptor) Path() string {
 	return fd.path
 }

@@ -1,6 +1,9 @@
 package main
 
 import (
+	commands2 "github.com/saichler/service-manager/golang/file-manager/commands"
+	message_handlers2 "github.com/saichler/service-manager/golang/file-manager/message-handlers"
+	service2 "github.com/saichler/service-manager/golang/file-manager/service"
 	"github.com/saichler/service-manager/golang/management/commands"
 	message_handlers "github.com/saichler/service-manager/golang/management/message-handlers"
 	"github.com/saichler/service-manager/golang/management/service"
@@ -13,10 +16,21 @@ func main() {
 		return
 	}
 
-	serviceManager.Console().RegisterCommand(commands.NewLS(serviceManager),"ls")
-	serviceManager.Console().RegisterCommand(commands.NewCD(serviceManager),"cd")
+	serviceManager.Console().RegisterCommand(commands.NewLS(serviceManager), "ls")
+	serviceManager.Console().RegisterCommand(commands.NewCD(serviceManager), "cd")
 	serviceManager.AddService(NewService())
-	serviceManager.LoadService("/home/saichler/datasand/src/github.com/saichler/service-manager/golang/file-manager/plugin/FileService.so")
+	serviceManager.AddService(NewFileService())
+	/*
+		files, e := ioutil.ReadDir("./plugins")
+		if e == nil {
+			for _, f := range files {
+				if strings.Contains(f.Name(), ".so") {
+					serviceManager.LoadService("./plugins/" + f.Name())
+				}
+			}
+		} else {
+			os.Create("./plugins")
+		}*/
 	serviceManager.WaitForShutdown()
 }
 
@@ -25,6 +39,15 @@ func NewService() (service_manager.IService, service_manager.IServiceCommands, s
 	h := &message_handlers.ManagementHandlers{}
 	h.Init(s)
 	c := &commands.ManagementCommands{}
+	c.Init(s, h)
+	return s, c, h
+}
+
+func NewFileService() (service_manager.IService, service_manager.IServiceCommands, service_manager.IServiceMessageHandlers) {
+	s := &service2.FileManager{}
+	h := &message_handlers2.FileManagerHandlers{}
+	h.Init(s)
+	c := &commands2.FileManagerCommands{}
 	c.Init(s, h)
 	return s, c, h
 }

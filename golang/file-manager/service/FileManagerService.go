@@ -41,7 +41,8 @@ func (fm *FileManager) Init(sm *ServiceManager, id uint16, sid *protocol.Service
 	fm.id = id
 	fm.cid = cid
 	fm.sid = sid
-	fm.peerSID = sid
+	fm.peerSID = &protocol.ServiceID{}
+	fm.peerSID.Parse("[M=0,Ip=192.168.86.169,P=52000][T=File Manager,D=1]")
 	fm.peerDir = "/tmp"
 	fm.localDir = "/tmp"
 }

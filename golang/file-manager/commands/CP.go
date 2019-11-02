@@ -3,26 +3,28 @@ package commands
 import (
 	"bytes"
 	. "github.com/saichler/console/golang/console/commands"
+	"github.com/saichler/security"
 	"github.com/saichler/service-manager/golang/file-manager/model"
 	. "github.com/saichler/service-manager/golang/file-manager/service"
 	. "github.com/saichler/service-manager/golang/service-manager"
+	utils "github.com/saichler/utils/golang"
 	"io/ioutil"
 	"net"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 )
 
-type CpCMD struct {
+type CP struct {
 	service *FileManager
 	ls      IMessageHandler
 	cp      IMessageHandler
+	conn    net.Conn
 }
 
-func NewCpCMD(sm IService, rls, cp IMessageHandler) *CpCMD {
-	sd := &CpCMD{}
+func NewCpCMD(sm IService, rls, cp IMessageHandler) *CP {
+	sd := &CP{}
 	sd.service = sm.(*FileManager)
 	sd.ls = rls
 	sd.cp = cp
@@ -32,72 +34,89 @@ func NewCpCMD(sm IService, rls, cp IMessageHandler) *CpCMD {
 	return sd
 }
 
-func (c *CpCMD) Command() string {
+func (cmd *CP) Command() string {
 	return "cp"
 }
 
-func (c *CpCMD) Description() string {
+func (cmd *CP) Description() string {
 	return "Copy a file from the remote location"
 }
 
-func (c *CpCMD) Usage() string {
+func (cmd *CP) Usage() string {
 	return "cp <remote path> <local path>"
 }
 
-func (c *CpCMD) ConsoleId() *ConsoleId {
-	return c.service.ConsoleId()
+func (cmd *CP) ConsoleId() *ConsoleId {
+	return cmd.service.ConsoleId()
 }
 
-func (c *CpCMD) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (cmd *CP) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 	if len(args) < 2 {
-		return c.Usage(), nil
+		return cmd.Usage(), nil
 	}
-	rfilename := c.service.PeerDir() + "/" + args[0]
-	lfilename := c.service.LocalDir() + "/" + args[1]
-	response := c.ls.Request(rfilename, c.service.PeerServiceID())
+	rfilename := cmd.service.PeerDir() + "/" + args[0]
+	lfilename := cmd.service.LocalDir() + "/" + args[1]
+	response := cmd.ls.Request(rfilename, cmd.service.PeerServiceID())
 	fd := response.(*model.FileDescriptor)
 	if fd.Name() == "" {
 		return "File " + rfilename + " does not exit.", nil
 	}
 
 	parts := fd.Part()
-
+	msg := "(" + strconv.Itoa(int(fd.Size())) + ")"
+	conn.Write([]byte(msg))
 	if parts == 1 {
 		fd.SetPart(0)
-		data := c.cp.Request(fd, c.service.PeerServiceID()).(*model.FileData)
+		data := cmd.cp.Request(fd, cmd.service.PeerServiceID()).(*model.FileData)
 		ioutil.WriteFile(lfilename, data.Data(), 777)
-		return "Written file:" + lfilename + " size:" + strconv.Itoa(int(fd.Size())), nil
 	} else {
-		job := &Job{}
-		job.mtx = sync.NewCond(&sync.Mutex{})
-		job.parts = parts
-		job.mtx.L.Lock()
+		cmd.conn = conn
+		tasks := utils.NewJob(5, cmd)
 		for i := 0; i < parts; i++ {
 			descriptor := fd.Clone()
 			descriptor.SetPart(i)
-			go c.FetchPart(descriptor, lfilename, job)
+			fpt := NewFetchPartTask(descriptor, lfilename, cmd.cp, cmd.service)
+			tasks.AddTask(fpt)
 		}
-		for job.parts != 0 {
-			job.mtx.Wait()
-		}
-		job.mtx.L.Unlock()
+		tasks.Run()
 		assemble(lfilename)
 
 	}
-	return "Multipart File with:" + strconv.Itoa(parts) + " and the size of:" + strconv.Itoa(int(fd.Size())), nil
+	hash, _ := security.FileHash256(lfilename)
+	valid := hash == fd.Hash()
+	if valid {
+		return "Done!", nil
+	}
+	return "Corrupted", nil
 }
 
-func (c *CpCMD) FetchPart(descriptor *model.FileDescriptor, target string, job *Job) {
-	data := c.cp.Request(descriptor, c.service.PeerServiceID()).(*model.FileData)
-	file, _ := os.Create(target + ".part-" + getPartString(descriptor.Part()))
+func (cmd *CP) Finished(task utils.JobTask) {
+	if cmd.conn != nil {
+		cmd.conn.Write([]byte("."))
+	}
+}
+
+type FetchPartTask struct {
+	descriptor *model.FileDescriptor
+	target     string
+	cp         IMessageHandler
+	service    *FileManager
+}
+
+func NewFetchPartTask(descriptor *model.FileDescriptor, target string, cp IMessageHandler, service *FileManager) *FetchPartTask {
+	fpt := &FetchPartTask{}
+	fpt.descriptor = descriptor
+	fpt.target = target
+	fpt.cp = cp
+	fpt.service = service
+	return fpt
+}
+
+func (task *FetchPartTask) Run() {
+	data := task.cp.Request(task.descriptor, task.service.PeerServiceID()).(*model.FileData)
+	file, _ := os.Create(task.target + ".part-" + getPartString(task.descriptor.Part()))
 	file.Write(data.Data())
 	file.Close()
-	job.mtx.L.Lock()
-	job.parts--
-	if job.parts == 0 {
-		job.mtx.Broadcast()
-	}
-	job.mtx.L.Unlock()
 }
 
 func getPartString(part int) string {
@@ -111,6 +130,7 @@ func getPartString(part int) string {
 }
 
 func assemble(filename string) {
+	os.Remove(filename)
 	index := strings.LastIndex(filename, "/")
 	dir := filename[0:index]
 	filenames := make([]string, 0)
@@ -145,9 +165,4 @@ func assemble(filename string) {
 		os.Remove(fn)
 	}
 	file.Close()
-}
-
-type Job struct {
-	mtx   *sync.Cond
-	parts int
 }

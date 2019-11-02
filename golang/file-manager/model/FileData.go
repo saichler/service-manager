@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	MAX_PART_SIZE = 1024 * 1024
+	MAX_PART_SIZE = 1024 * 1024 * 5
 )
 
 type FileData struct {
