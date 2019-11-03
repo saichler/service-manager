@@ -32,7 +32,7 @@ func NewFileDescriptor(path string, dept int, calcHash bool) *FileDescriptor {
 	root := createEmpty(path)
 	descriptor := root.Get(path)
 	if calcHash {
-		pool := utils.NewWorkerPool(50)
+		pool := utils.NewWorkerPool(1)
 		pool.Start()
 		fill(descriptor, dept, 0, pool)
 		pool.WaitForEmptyQueue()
