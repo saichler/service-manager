@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/saichler/messaging/golang/net/protocol"
-	"github.com/saichler/security"
 	utils "github.com/saichler/utils/golang"
 )
 
@@ -11,23 +10,14 @@ type Inventory struct {
 	Services []*protocol.ServiceID
 }
 
-func (inv *Inventory) Marshal(oldHash string) ([]byte, string) {
+func (inv *Inventory) Marshal() ([]byte) {
 	bs := utils.NewByteSlice()
 	inv.SID.Marshal(bs)
 	bs.AddInt(len(inv.Services))
 	for _, sid := range inv.Services {
 		sid.Marshal(bs)
 	}
-	data := bs.Data()
-	hash := security.Hash256(data)
-	if oldHash != hash {
-		return data, hash
-	}
-
-	bs = utils.NewByteSlice()
-	inv.SID.Marshal(bs)
-	bs.AddInt(0)
-	return bs.Data(), oldHash
+	return bs.Data()
 }
 
 func (inv *Inventory) UnMarshal(data []byte) {
