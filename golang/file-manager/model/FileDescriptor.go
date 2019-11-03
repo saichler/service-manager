@@ -167,7 +167,7 @@ func NewFileDescriptor(path string, dept int) *FileDescriptor {
 	hashJobs := &HashJobs{}
 	hashJobs.cond = sync.NewCond(&sync.Mutex{})
 	fill(descriptor, dept, 0, hashJobs)
-	hashJobs.wait()
+	//hashJobs.wait()
 	return descriptor
 }
 
@@ -193,15 +193,16 @@ func fill(descriptor *FileDescriptor, dept, current int, hashJobs *HashJobs) {
 		}
 	} else if !file.IsDir() {
 		descriptor.parts = int(descriptor.size/MAX_PART_SIZE) + 1
+		/*
+			hj := &HashJob{}
+			hj.hashJobs = hashJobs
+			hj.descriptor = descriptor
 
-		hj := &HashJob{}
-		hj.hashJobs = hashJobs
-		hj.descriptor = descriptor
-
-		hashJobs.cond.L.Lock()
-		hashJobs.total++
-		go hj.Run()
-		hashJobs.cond.L.Unlock()
+			hashJobs.cond.L.Lock()
+			hashJobs.total++
+			go hj.Run()
+			hashJobs.cond.L.Unlock()
+		*/
 	}
 }
 
