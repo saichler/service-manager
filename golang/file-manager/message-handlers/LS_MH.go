@@ -8,12 +8,12 @@ import (
 )
 
 type LS_MH struct {
-	fs *FileManager
+	fs *FileManagerService
 }
 
 func NewRlsMH(service IService) *LS_MH {
 	lf := &LS_MH{}
-	lf.fs = service.(*FileManager)
+	lf.fs = service.(*FileManagerService)
 	return lf
 }
 
@@ -30,8 +30,9 @@ func (msgHandler *LS_MH) Message(destination *ServiceID, data []byte, isReply bo
 }
 
 func (msgHandler *LS_MH) Handle(message *Message) {
-	dir := string(message.Data())
-	fd, _ := model.Create(dir, 1, 0)
+	fr := &model.FileRequest{}
+	fr.UnMarshal(message.Data())
+	fd := model.NewFileDescriptor(fr.Path(), fr.Dept())
 	if fd == nil {
 		fd = &model.FileDescriptor{}
 	}
@@ -40,11 +41,11 @@ func (msgHandler *LS_MH) Handle(message *Message) {
 }
 
 func (msgHandler *LS_MH) Request(data interface{}, dest *ServiceID) interface{} {
-	response, e := msgHandler.fs.ServiceManager().Request(msgHandler.Topic(), msgHandler.fs, dest, []byte(data.(string)), false)
+	req := data.(*model.FileRequest)
+	response, e := msgHandler.fs.ServiceManager().Request(msgHandler.Topic(), msgHandler.fs, dest, req.Marshal(), false)
 	if e != nil {
 		return nil
 	}
-	fd := &model.FileDescriptor{}
-	fd.Unmarshal(response)
+	fd := model.UnmarshalFileDescriptor(response)
 	return fd
 }

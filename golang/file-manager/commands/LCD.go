@@ -8,35 +8,35 @@ import (
 	"strings"
 )
 
-type CD struct {
+type LCD struct {
 	service *FileManagerService
 	mh      IMessageHandler
 }
 
-func NewCD(sm IService, mh IMessageHandler) *CD {
-	sd := &CD{}
+func NewLCD(sm IService, mh IMessageHandler) *LCD {
+	sd := &LCD{}
 	sd.service = sm.(*FileManagerService)
 	sd.mh = mh
 	return sd
 }
 
-func (cmd *CD) Command() string {
-	return "cd"
+func (cmd *LCD) Command() string {
+	return "lcd"
 }
 
-func (cmd *CD) Description() string {
-	return "Change directory"
+func (cmd *LCD) Description() string {
+	return "Change local directory"
 }
 
-func (cmd *CD) Usage() string {
-	return "cd <dir>"
+func (cmd *LCD) Usage() string {
+	return "lcd <dir>"
 }
 
-func (cmd *CD) ConsoleId() *ConsoleId {
+func (cmd *LCD) ConsoleId() *ConsoleId {
 	return cmd.service.ConsoleId()
 }
 
-func (cmd *CD) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (cmd *LCD) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 
 	if len(args) == 0 {
 		return cmd.Usage(), nil
@@ -45,21 +45,18 @@ func (cmd *CD) HandleCommand(command Command, args []string, conn net.Conn, id *
 	dir := args[0]
 
 	if string(dir[0]) == "/" {
-		cmd.service.SetPeerDir(args[0])
-		id.SetSuffix(":" + dir)
+		cmd.service.SetLocalDir(args[0])
 		return "", nil
 	}
 	if dir == ".." {
-		path := cmd.service.PeerDir()
+		path := cmd.service.LocalDir()
 		index := strings.LastIndex(path, "/")
 		if index > 0 {
 			path = path[0:index]
-			cmd.service.SetPeerDir(path)
-			id.SetSuffix(":" + path)
+			cmd.service.SetLocalDir(path)
 		} else {
 			path = "/"
-			cmd.service.SetPeerDir(path)
-			id.SetSuffix(":" + path)
+			cmd.service.SetLocalDir(path)
 		}
 		return "", nil
 	}

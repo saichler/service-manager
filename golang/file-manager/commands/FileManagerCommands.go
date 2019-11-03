@@ -12,11 +12,14 @@ type FileManagerCommands struct {
 
 func (c *FileManagerCommands) Init(service IService, mh IServiceMessageHandlers) {
 	c.commands = make(map[string]commands.Command)
-	c.addCommand(NewListPeers(service))
+	c.addCommand(NewPeers(service))
+	c.addCommand(NewSet(service))
 	c.addCommand(NewLS(service, mh.Handler("ls")))
 	c.addCommand(NewCD(service, mh.Handler("ls")))
+	c.addCommand(NewLCD(service, mh.Handler("ls")))
+	c.addCommand(NewSync(service, mh.Handler("cp"), mh.Handler("ls")))
 	c.addCommand(NewCpCMD(service, mh.Handler("ls"), mh.Handler("cp")))
-	c.addAlias(commands2.NewCD(service), "lcd")
+	c.addAlias(commands2.NewCD(service), "..")
 }
 
 func (c *FileManagerCommands) addCommand(cmd commands.Command) {

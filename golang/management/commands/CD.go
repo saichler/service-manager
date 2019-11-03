@@ -42,6 +42,9 @@ func (c *CD) ConsoleId() *ConsoleId {
 
 func (c *CD) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 	if len(args) == 0 {
+		if id.Parent() != nil {
+			return "", id.Parent()
+		}
 		return "Service name is required", nil
 	}
 	if c.sm != nil {
@@ -52,9 +55,6 @@ func (c *CD) HandleCommand(command Command, args []string, conn net.Conn, id *Co
 }
 
 func (c *CD) handleServiceManager(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
-	if len(args) == 0 {
-		return "Service name is required", nil
-	}
 	serviceID := args[0]
 	if len(args) > 1 {
 		for i := 1; i < len(args); i++ {

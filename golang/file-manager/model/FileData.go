@@ -10,22 +10,32 @@ const (
 )
 
 type FileData struct {
+	path string
 	part int
+	size int64
 	data []byte
 }
 
-func NewFileData(descriptor *FileDescriptor) *FileData {
-	loc := MAX_PART_SIZE * int64(descriptor.part)
+func NewFileData(path string, part int, size int64) *FileData {
 	fileData := &FileData{}
-	fileData.part = descriptor.part
-
-	dataSize := MAX_PART_SIZE
-	if descriptor.size-loc < MAX_PART_SIZE {
-		dataSize = int(descriptor.size - loc)
+	fileData.path = path
+	fileData.part = part
+	fileData.size = size
+	if fileData.data == nil {
+		fileData.data = make([]byte, 0)
 	}
-	data := make([]byte, dataSize)
+	return fileData
+}
 
-	file, _ := os.Open(descriptor.path)
+func (fileData *FileData) LoadData() {
+	loc := MAX_PART_SIZE * int64(fileData.part)
+	dataSize := MAX_PART_SIZE
+	if fileData.size-loc < MAX_PART_SIZE {
+		dataSize = int(fileData.size - loc)
+	}
+
+	data := make([]byte, dataSize)
+	file, _ := os.Open(fileData.path)
 	_, e := file.Seek(loc, 0)
 	if e != nil {
 		panic(e)
@@ -37,16 +47,13 @@ func NewFileData(descriptor *FileDescriptor) *FileData {
 	}
 	file.Close()
 	fileData.data = data
-
-	dest, _ := os.Create("/tmp/test.zip")
-	dest.Write(data)
-	dest.Close()
-	return fileData
 }
 
 func (fileData *FileData) Marshal() []byte {
 	bs := utils.NewByteSlice()
 	bs.AddInt(fileData.part)
+	bs.AddInt64(fileData.size)
+	bs.AddString(fileData.path)
 	bs.AddByteSlice(fileData.data)
 	return bs.Data()
 }
@@ -54,11 +61,17 @@ func (fileData *FileData) Marshal() []byte {
 func (fileData *FileData) Unmarshal(data []byte) {
 	bs := utils.NewByteSliceWithData(data, 0)
 	fileData.part = bs.GetInt()
+	fileData.size = bs.GetInt64()
+	fileData.path = bs.GetString()
 	fileData.data = bs.GetByteSlice()
 }
 
 func (fileData *FileData) Part() int {
 	return fileData.part
+}
+
+func (fileData *FileData) Path() string {
+	return fileData.path
 }
 
 func (fileData *FileData) Data() []byte {

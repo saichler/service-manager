@@ -10,7 +10,7 @@ import (
 var Service, Commands, Handlers = NewService()
 
 func NewService() (IService, IServiceCommands, IServiceMessageHandlers) {
-	s := &service.FileManager{}
+	s := &service.FileManagerService{}
 	h := &message_handlers.FileManagerHandlers{}
 	h.Init(s)
 	c := &commands.FileManagerCommands{}

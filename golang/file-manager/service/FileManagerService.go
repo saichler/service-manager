@@ -6,7 +6,7 @@ import (
 	. "github.com/saichler/service-manager/golang/service-manager"
 )
 
-type FileManager struct {
+type FileManagerService struct {
 	id       uint16
 	cid      *commands.ConsoleId
 	sm       *ServiceManager
@@ -16,53 +16,56 @@ type FileManager struct {
 	localDir string
 }
 
-func (fm *FileManager) Topic() string {
+func (fm *FileManagerService) Topic() string {
 	return "File Manager"
 }
 
-func (fm *FileManager) ID() uint16 {
+func (fm *FileManagerService) ID() uint16 {
 	return fm.id
 }
 
-func (fm *FileManager) ConsoleId() *commands.ConsoleId {
+func (fm *FileManagerService) ConsoleId() *commands.ConsoleId {
 	return fm.cid
 }
 
-func (fm *FileManager) ServiceManager() *ServiceManager {
+func (fm *FileManagerService) ServiceManager() *ServiceManager {
 	return fm.sm
 }
 
-func (fm *FileManager) ServiceID() *protocol.ServiceID {
+func (fm *FileManagerService) ServiceID() *protocol.ServiceID {
 	return fm.sid
 }
 
-func (fm *FileManager) Init(sm *ServiceManager, id uint16, sid *protocol.ServiceID, cid *commands.ConsoleId) {
+func (fm *FileManagerService) Init(sm *ServiceManager, id uint16, sid *protocol.ServiceID, cid *commands.ConsoleId) {
 	fm.sm = sm
 	fm.id = id
 	fm.cid = cid
 	fm.sid = sid
-	fm.peerSID = &protocol.ServiceID{}
-	fm.peerSID.Parse("[M=0,Ip=192.168.86.169,P=52000][T=File Manager,D=1]")
+	fm.peerSID = sid
 	fm.peerDir = "/tmp"
 	fm.localDir = "/tmp"
 }
 
-func (fm *FileManager) PeerServiceID() *protocol.ServiceID {
+func (fm *FileManagerService) PeerServiceID() *protocol.ServiceID {
 	return fm.peerSID
 }
 
-func (fm *FileManager) SetPeerServiceID(sid *protocol.ServiceID) {
+func (fm *FileManagerService) SetPeerServiceID(sid *protocol.ServiceID) {
 	fm.peerSID = sid
 }
 
-func (fm *FileManager) PeerDir() string {
+func (fm *FileManagerService) PeerDir() string {
 	return fm.peerDir
 }
 
-func (fm *FileManager) SetPeerDir(dir string) {
+func (fm *FileManagerService) SetPeerDir(dir string) {
 	fm.peerDir = dir
 }
 
-func (fm *FileManager) LocalDir() string {
+func (fm *FileManagerService) LocalDir() string {
 	return fm.localDir
+}
+
+func (fm *FileManagerService) SetLocalDir(l string) {
+	fm.localDir = l
 }

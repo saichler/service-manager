@@ -31,7 +31,7 @@ func (c *Shutdown) ConsoleId() *ConsoleId {
 	return c.service.ConsoleId()
 }
 func (c *Shutdown) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
-	Write("Are you sure you want to shutdown "+c.service.ServiceManager().ConsoleId().String()+" (yes/no)?", conn)
+	Write("Are you sure you want to shutdown "+c.service.ServiceManager().ConsoleId().ID()+" (yes/no)?", conn)
 	reply, _ := Read(conn)
 	reply = strings.ToLower(reply)
 	for reply != "no" && reply != "yes" {

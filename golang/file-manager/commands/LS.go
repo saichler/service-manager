@@ -10,13 +10,13 @@ import (
 )
 
 type LS struct {
-	service *FileManager
+	service *FileManagerService
 	mh      IMessageHandler
 }
 
 func NewLS(sm IService, mh IMessageHandler) *LS {
 	sd := &LS{}
-	sd.service = sm.(*FileManager)
+	sd.service = sm.(*FileManagerService)
 	sd.mh = mh
 	return sd
 }
@@ -38,7 +38,8 @@ func (cmd *LS) ConsoleId() *ConsoleId {
 }
 
 func (cmd *LS) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
-	response := cmd.mh.Request(cmd.service.PeerDir(), cmd.service.PeerServiceID())
+	fr := model.NewFileRequest(cmd.service.PeerDir(), 1)
+	response := cmd.mh.Request(fr, cmd.service.PeerServiceID())
 	fd := response.(*model.FileDescriptor)
 	buff := bytes.Buffer{}
 	buff.WriteString("------------------------------------------------\n")
@@ -53,5 +54,6 @@ func (cmd *LS) HandleCommand(command Command, args []string, conn net.Conn, id *
 		buff.WriteString(file.Name())
 		buff.WriteString("\n")
 	}
+	id.SetSuffix(":" + cmd.service.PeerDir())
 	return buff.String(), nil
 }

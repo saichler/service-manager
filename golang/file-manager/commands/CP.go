@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"github.com/saichler/console/golang/console"
 	. "github.com/saichler/console/golang/console/commands"
 	"github.com/saichler/security"
 	"github.com/saichler/service-manager/golang/file-manager/model"
@@ -17,7 +18,7 @@ import (
 )
 
 type CP struct {
-	service *FileManager
+	service *FileManagerService
 	ls      IMessageHandler
 	cp      IMessageHandler
 	conn    net.Conn
@@ -25,7 +26,7 @@ type CP struct {
 
 func NewCpCMD(sm IService, rls, cp IMessageHandler) *CP {
 	sd := &CP{}
-	sd.service = sm.(*FileManager)
+	sd.service = sm.(*FileManagerService)
 	sd.ls = rls
 	sd.cp = cp
 	if rls == nil {
@@ -56,26 +57,40 @@ func (cmd *CP) HandleCommand(command Command, args []string, conn net.Conn, id *
 	}
 	rfilename := cmd.service.PeerDir() + "/" + args[0]
 	lfilename := cmd.service.LocalDir() + "/" + args[1]
-	response := cmd.ls.Request(rfilename, cmd.service.PeerServiceID())
+
+	req := model.NewFileRequest(rfilename, 1)
+	response := cmd.ls.Request(req, cmd.service.PeerServiceID())
 	fd := response.(*model.FileDescriptor)
 	if fd.Name() == "" {
 		return "File " + rfilename + " does not exit.", nil
+	} else if fd.Size() == 0 {
+		return "File in empty", nil
 	}
 
-	parts := fd.Part()
-	msg := "(" + strconv.Itoa(int(fd.Size())) + ")"
+	if _, err := os.Stat(lfilename); !os.IsNotExist(err) {
+		hash, _ := security.FileHash256(lfilename)
+		if hash == fd.Hash() {
+			return "File " + rfilename + " already exist in local dir", nil
+		}
+		console.Write("File already exist in local, overwrite (yes/no)?", conn)
+		resp, _ := console.Read(conn)
+		if resp != "yes" {
+			return "Aborting", nil
+		}
+	}
+
+	parts := fd.Parts()
+	msg := lfilename + " (" + strconv.Itoa(int(fd.Size())) + "):"
 	conn.Write([]byte(msg))
 	if parts == 1 {
-		fd.SetPart(0)
 		data := cmd.cp.Request(fd, cmd.service.PeerServiceID()).(*model.FileData)
 		ioutil.WriteFile(lfilename, data.Data(), 777)
 	} else {
 		cmd.conn = conn
-		tasks := utils.NewJob(5, cmd)
+		tasks := utils.NewJob(1, cmd)
 		for i := 0; i < parts; i++ {
-			descriptor := fd.Clone()
-			descriptor.SetPart(i)
-			fpt := NewFetchPartTask(descriptor, lfilename, cmd.cp, cmd.service)
+			fileData := model.NewFileData(rfilename, i, fd.Size())
+			fpt := NewFetchPartTask(fileData, lfilename, cmd.cp, cmd.service)
 			tasks.AddTask(fpt)
 		}
 		tasks.Run()
@@ -97,24 +112,24 @@ func (cmd *CP) Finished(task utils.JobTask) {
 }
 
 type FetchPartTask struct {
-	descriptor *model.FileDescriptor
-	target     string
-	cp         IMessageHandler
-	service    *FileManager
+	fileData *model.FileData
+	cp       IMessageHandler
+	service  *FileManagerService
+	target   string
 }
 
-func NewFetchPartTask(descriptor *model.FileDescriptor, target string, cp IMessageHandler, service *FileManager) *FetchPartTask {
+func NewFetchPartTask(fileData *model.FileData, target string, cp IMessageHandler, service *FileManagerService) *FetchPartTask {
 	fpt := &FetchPartTask{}
-	fpt.descriptor = descriptor
-	fpt.target = target
+	fpt.fileData = fileData
 	fpt.cp = cp
 	fpt.service = service
+	fpt.target = target
 	return fpt
 }
 
 func (task *FetchPartTask) Run() {
-	data := task.cp.Request(task.descriptor, task.service.PeerServiceID()).(*model.FileData)
-	file, _ := os.Create(task.target + ".part-" + getPartString(task.descriptor.Part()))
+	data := task.cp.Request(task.fileData, task.service.PeerServiceID()).(*model.FileData)
+	file, _ := os.Create(task.target + ".part-" + getPartString(task.fileData.Part()))
 	file.Write(data.Data())
 	file.Close()
 }

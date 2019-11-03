@@ -8,12 +8,12 @@ import (
 )
 
 type CP_MH struct {
-	fs *FileManager
+	fs *FileManagerService
 }
 
 func NewCpMH(service IService) *CP_MH {
 	lf := &CP_MH{}
-	lf.fs = service.(*FileManager)
+	lf.fs = service.(*FileManagerService)
 	return lf
 }
 
@@ -32,20 +32,19 @@ func (msgHandler *CP_MH) Message(destination *ServiceID, data []byte, isReply bo
 var total = 0
 
 func (msgHandler *CP_MH) Handle(message *Message) {
-	fd := &model.FileDescriptor{}
-	fd.Unmarshal(message.Data())
-	part := model.NewFileData(fd)
-	total += len(part.Data())
-	msgHandler.fs.ServiceManager().Reply(message, part.Marshal())
+	fileData := &model.FileData{}
+	fileData.Unmarshal(message.Data())
+	fileData.LoadData()
+	total += len(fileData.Data())
+	msgHandler.fs.ServiceManager().Reply(message, fileData.Marshal())
 }
 
 func (msgHandler *CP_MH) Request(data interface{}, dest *ServiceID) interface{} {
-	descriptor := data.(*model.FileDescriptor)
-	response, e := msgHandler.fs.ServiceManager().Request(msgHandler.Topic(), msgHandler.fs, dest, descriptor.Marshal(), false)
+	fileData := data.(*model.FileData)
+	response, e := msgHandler.fs.ServiceManager().Request(msgHandler.Topic(), msgHandler.fs, dest, fileData.Marshal(), false)
 	if e != nil {
 		return nil
 	}
-	fileData := &model.FileData{}
 	fileData.Unmarshal(response)
 	return fileData
 }
