@@ -32,7 +32,7 @@ func (msgHandler *LS_MH) Message(destination *ServiceID, data []byte, isReply bo
 func (msgHandler *LS_MH) Handle(message *Message) {
 	fr := &model.FileRequest{}
 	fr.UnMarshal(message.Data())
-	fd := model.NewFileDescriptor(fr.Path(), fr.Dept())
+	fd := model.NewFileDescriptor(fr.Path(), fr.Dept(), fr.CalcHash())
 	if fd == nil {
 		fd = &model.FileDescriptor{}
 	}

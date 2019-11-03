@@ -2,22 +2,20 @@ package model
 
 import (
 	"bytes"
-	"github.com/saichler/security"
 	utils "github.com/saichler/utils/golang"
-	"io/ioutil"
-	"os"
 	"strings"
-	"sync"
 )
 
 type FileDescriptor struct {
-	name      string
-	parent    *FileDescriptor
-	size      int64
-	hash      string
-	parts     int
-	files     map[string]*FileDescriptor
-	pathCache string
+	name         string
+	sourceParent *FileDescriptor
+	targetParent *FileDescriptor
+	size         int64
+	hash         string
+	parts        int
+	files        map[string]*FileDescriptor
+	sourcePath   string
+	targetPath   string
 }
 
 func (fileDescriptor *FileDescriptor) Name() string {
@@ -28,8 +26,12 @@ func (fileDescriptor *FileDescriptor) Hash() string {
 	return fileDescriptor.hash
 }
 
-func (fileDescriptor *FileDescriptor) Parent() *FileDescriptor {
-	return fileDescriptor.parent
+func (fileDescriptor *FileDescriptor) SetHash(hash string) {
+	fileDescriptor.hash = hash
+}
+
+func (fileDescriptor *FileDescriptor) SourceParent() *FileDescriptor {
+	return fileDescriptor.sourceParent
 }
 
 func (fileDescriptor *FileDescriptor) Size() int64 {
@@ -44,15 +46,19 @@ func (fileDescriptor *FileDescriptor) SetPart(p int) {
 	fileDescriptor.parts = p
 }
 
+func (fileDescriptor *FileDescriptor) IsDir() bool {
+	return !(fileDescriptor.files == nil || len(fileDescriptor.files) == 0)
+}
+
 func (fileDescriptor *FileDescriptor) Files() map[string]*FileDescriptor {
 	return fileDescriptor.files
 }
 
-func (fileDescriptor *FileDescriptor) Root() *FileDescriptor {
-	if fileDescriptor.parent == nil {
+func (fileDescriptor *FileDescriptor) SourceRoot() *FileDescriptor {
+	if fileDescriptor.sourceParent == nil {
 		return fileDescriptor
 	}
-	return fileDescriptor.parent.Root()
+	return fileDescriptor.sourceParent.SourceRoot()
 }
 
 func (fileDescriptor *FileDescriptor) Get(path string) *FileDescriptor {
@@ -72,32 +78,32 @@ func (fileDescriptor *FileDescriptor) Get(path string) *FileDescriptor {
 	return child
 }
 
-func (fileDescriptor *FileDescriptor) FullPath() string {
-	if fileDescriptor.pathCache != "" {
-		return fileDescriptor.pathCache
+func (fileDescriptor *FileDescriptor) SourcePath() string {
+	if fileDescriptor.sourcePath != "" {
+		return fileDescriptor.sourcePath
 	}
-	if fileDescriptor.parent == nil {
+	if fileDescriptor.sourceParent == nil {
 		return "/"
 	}
 	buff := &bytes.Buffer{}
-	fileDescriptor.fullPath(buff)
-	fileDescriptor.pathCache = buff.String()
-	return fileDescriptor.pathCache
+	fileDescriptor._sourcePath(buff)
+	fileDescriptor.sourcePath = buff.String()
+	return fileDescriptor.sourcePath
 }
 
-func (fileDescriptor *FileDescriptor) fullPath(buff *bytes.Buffer) {
-	if fileDescriptor.parent == nil {
+func (fileDescriptor *FileDescriptor) _sourcePath(buff *bytes.Buffer) {
+	if fileDescriptor.sourceParent == nil {
 		return
 	}
-	fileDescriptor.parent.fullPath(buff)
+	fileDescriptor.sourceParent._sourcePath(buff)
 	buff.WriteString("/")
 	buff.WriteString(fileDescriptor.name)
 }
 
 func (fileDescriptor *FileDescriptor) Marshal() []byte {
 	bs := utils.NewByteSlice()
-	bs.AddString(fileDescriptor.FullPath())
-	fileDescriptor.Root().marshal(bs)
+	bs.AddString(fileDescriptor.SourcePath())
+	fileDescriptor.SourceRoot().marshal(bs)
 	return bs.Data()
 }
 
@@ -138,99 +144,6 @@ func (fileDescriptor *FileDescriptor) unmarshal(bs *utils.ByteSlice) {
 		child := &FileDescriptor{}
 		child.unmarshal(bs)
 		fileDescriptor.files[key] = child
-		child.parent = fileDescriptor
-	}
-}
-
-func createEmpty(path string) *FileDescriptor {
-	index := strings.Index(path, "/")
-	descriptor := &FileDescriptor{}
-	if index == 0 {
-		descriptor.name = "/"
-	} else if index == -1 {
-		descriptor.name = path
-		return descriptor
-	} else {
-		descriptor.name = path[0:index]
-	}
-	descriptor.files = make(map[string]*FileDescriptor)
-	child := createEmpty(path[index+1:])
-	child.parent = descriptor
-	descriptor.files[child.name] = child
-	return descriptor
-
-}
-
-func NewFileDescriptor(path string, dept int) *FileDescriptor {
-	root := createEmpty(path)
-	descriptor := root.Get(path)
-	hashJobs := &HashJobs{}
-	hashJobs.cond = sync.NewCond(&sync.Mutex{})
-	fill(descriptor, dept, 0, hashJobs)
-	//hashJobs.wait()
-	return descriptor
-}
-
-func fill(descriptor *FileDescriptor, dept, current int, hashJobs *HashJobs) {
-	file, e := os.Stat(descriptor.FullPath())
-	if e != nil {
-		return
-	}
-
-	descriptor.size = file.Size()
-
-	if file.IsDir() && current < dept {
-		descriptor.files = make(map[string]*FileDescriptor)
-		files, e := ioutil.ReadDir(descriptor.FullPath())
-		if e == nil {
-			for _, file := range files {
-				child := &FileDescriptor{}
-				child.parent = descriptor
-				child.name = file.Name()
-				fill(child, dept, current+1, hashJobs)
-				descriptor.files[child.name] = child
-			}
-		}
-	} else if !file.IsDir() {
-		descriptor.parts = int(descriptor.size/MAX_PART_SIZE) + 1
-		/*
-			hj := &HashJob{}
-			hj.hashJobs = hashJobs
-			hj.descriptor = descriptor
-
-			hashJobs.cond.L.Lock()
-			hashJobs.total++
-			go hj.Run()
-			hashJobs.cond.L.Unlock()
-		*/
-	}
-}
-
-type HashJobs struct {
-	total int
-	done  int
-	cond  *sync.Cond
-}
-
-func (hashJobs *HashJobs) wait() {
-	hashJobs.cond.L.Lock()
-	if hashJobs.total > hashJobs.done {
-		hashJobs.cond.Wait()
-	}
-	hashJobs.cond.L.Unlock()
-}
-
-type HashJob struct {
-	hashJobs   *HashJobs
-	descriptor *FileDescriptor
-}
-
-func (hj *HashJob) Run() {
-	hj.descriptor.hash, _ = security.FileHash256(hj.descriptor.FullPath())
-	hj.hashJobs.cond.L.Lock()
-	defer hj.hashJobs.cond.L.Unlock()
-	hj.hashJobs.done++
-	if hj.hashJobs.done == hj.hashJobs.total {
-		hj.hashJobs.cond.Broadcast()
+		child.sourceParent = fileDescriptor
 	}
 }

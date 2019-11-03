@@ -58,7 +58,7 @@ func (cmd *CP) HandleCommand(command Command, args []string, conn net.Conn, id *
 	rfilename := cmd.service.PeerDir() + "/" + args[0]
 	lfilename := cmd.service.LocalDir() + "/" + args[1]
 
-	req := model.NewFileRequest(rfilename, 1)
+	req := model.NewFileRequest(rfilename, 1, true)
 	response := cmd.ls.Request(req, cmd.service.PeerServiceID())
 	fd := response.(*model.FileDescriptor)
 	if fd.Name() == "" {
@@ -68,7 +68,7 @@ func (cmd *CP) HandleCommand(command Command, args []string, conn net.Conn, id *
 	}
 
 	if _, err := os.Stat(lfilename); !os.IsNotExist(err) {
-		hash, _ := security.FileHash256(lfilename)
+		hash, _ := security.FileHash(lfilename)
 		if hash == fd.Hash() {
 			return "File " + rfilename + " already exist in local dir", nil
 		}
@@ -97,7 +97,7 @@ func (cmd *CP) HandleCommand(command Command, args []string, conn net.Conn, id *
 		assemble(lfilename)
 
 	}
-	hash, _ := security.FileHash256(lfilename)
+	hash, _ := security.FileHash(lfilename)
 	valid := hash == fd.Hash()
 	if valid {
 		return "Done!", nil
