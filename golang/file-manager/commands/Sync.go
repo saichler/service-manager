@@ -60,7 +60,7 @@ func (cmd *Sync) HandleCommand(command Command, args []string, conn net.Conn, id
 	console.Writeln("Done!", conn)
 	console.Writeln("Start downloading files...", conn)
 	cmd.conn = conn
-	//cmd.copyFiles(descriptor)
+	cmd.copyFiles(descriptor)
 	return "Done", nil
 }
 
