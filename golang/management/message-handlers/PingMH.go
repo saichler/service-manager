@@ -1,6 +1,7 @@
 package message_handlers
 
 import (
+	"fmt"
 	"github.com/saichler/messaging/golang/net/protocol"
 	"github.com/saichler/service-manager/golang/management/model"
 	. "github.com/saichler/service-manager/golang/management/service"
@@ -42,7 +43,11 @@ func (m *PingMH) Handle(message *protocol.Message) {
 			utils.Info("  ", s.String())
 		}
 	}
-	m.ms.ServiceManager().ServiceNetwork().UpdateInventory(inv)
+	newData := m.ms.ServiceManager().ServiceNetwork().UpdateInventory(inv)
+	if newData {
+		fmt.Println("New Peer")
+		m.hash = ""
+	}
 }
 
 func (m *PingMH) inventory() []byte {

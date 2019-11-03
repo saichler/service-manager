@@ -18,7 +18,7 @@ func NewServiceNetwork() *ServiceNetwork {
 	return sn
 }
 
-func (sn *ServiceNetwork) UpdateInventory(inventory *Inventory) {
+func (sn *ServiceNetwork) UpdateInventory(inventory *Inventory) bool {
 	sn.mtx.Lock()
 	defer sn.mtx.Unlock()
 	key := inventory.SID.String()
@@ -26,6 +26,10 @@ func (sn *ServiceNetwork) UpdateInventory(inventory *Inventory) {
 		utils.Info("Updating inventory")
 		sn.serviceNetwork[key] = inventory
 	}
+	if sn.serviceNetwork[key] == nil {
+		return true
+	}
+	return false
 }
 
 func (sn *ServiceNetwork) GetPeers(id *protocol.ServiceID) []*protocol.ServiceID {
