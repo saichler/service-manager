@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"errors"
 	"github.com/saichler/console/golang/console"
 	. "github.com/saichler/console/golang/console/commands"
 	"github.com/saichler/security"
@@ -47,7 +46,7 @@ func (cmd *Sync) ConsoleId() *ConsoleId {
 }
 
 func (cmd *Sync) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
-	dirRequest := model.NewFileRequest(cmd.service.PeerDir(), 100, true)
+	dirRequest := model.NewFileRequest(cmd.service.PeerDir(), 100, false)
 	console.Write("Scanning Remote Directory, this may take a min...", conn)
 	response := cmd.ls.Request(dirRequest, cmd.service.PeerServiceID())
 	console.Writeln("Done!", conn)
@@ -72,9 +71,25 @@ func (cmd *Sync) copyFiles(descriptor *model.FileDescriptor) {
 		}
 		return
 	}
-	request := model.NewFileRequest(descriptor.SourcePath(), 1, true)
-	response := cmd.ls.Request(request, cmd.service.PeerServiceID())
-	descriptor.SetHash(response.(*model.FileDescriptor).Hash())
+
+	if descriptor.Name() == "" {
+		console.Writeln("File "+descriptor.SourcePath()+" does not exit.", cmd.conn)
+		return
+	} else if descriptor.Size() == 0 {
+		console.Writeln("File "+descriptor.SourcePath()+" Is Empty.", cmd.conn)
+		return
+	}
+
+	if _, err := os.Stat(descriptor.TargetPath()); !os.IsNotExist(err) {
+		request := model.NewFileRequest(descriptor.SourcePath(), 1, true)
+		response := cmd.ls.Request(request, cmd.service.PeerServiceID())
+		descriptor.SetHash(response.(*model.FileDescriptor).Hash())
+		hash, _ := security.FileHash(descriptor.TargetPath())
+		if hash == descriptor.Hash() {
+			return
+		}
+	}
+
 	cmd.copyFile(descriptor)
 }
 
@@ -87,12 +102,6 @@ func (cmd *Sync) Finished(task utils.JobTask) {
 func (cmd *Sync) copyFile(descriptor *model.FileDescriptor) error {
 	msg := descriptor.TargetPath() + " (" + strconv.Itoa(int(descriptor.Size())) + "): "
 	console.Write(msg, cmd.conn)
-
-	if descriptor.Name() == "" {
-		return errors.New("File " + descriptor.SourcePath() + " does not exit.")
-	} else if descriptor.Size() == 0 {
-		return errors.New("File " + descriptor.SourcePath() + " Is Empty.")
-	}
 
 	if _, err := os.Stat(descriptor.TargetPath()); !os.IsNotExist(err) {
 		hash, _ := security.FileHash(descriptor.TargetPath())
