@@ -127,12 +127,16 @@ func (cmd *Sync) copyFile(descriptor *model.FileDescriptor) error {
 		assemble(descriptor.TargetPath())
 
 	}
-	hash, _ := security.FileHash(descriptor.TargetPath())
-	valid := hash == descriptor.Hash()
-	if valid {
-		cmd.conn.Write([]byte("Done!\n"))
+	if descriptor.Hash() != "" {
+		hash, _ := security.FileHash(descriptor.TargetPath())
+		valid := hash == descriptor.Hash()
+		if valid {
+			console.Writeln("Done!", cmd.conn)
+		} else {
+			console.Writeln("Corrupted!", cmd.conn)
+		}
 	} else {
-		cmd.conn.Write([]byte("Corrupted!\n"))
+		console.Writeln("Done!", cmd.conn)
 	}
 	return nil
 }
