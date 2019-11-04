@@ -5,7 +5,6 @@ import (
 	"github.com/saichler/service-manager/golang/management/model"
 	. "github.com/saichler/service-manager/golang/management/service"
 	. "github.com/saichler/service-manager/golang/service-manager"
-	utils "github.com/saichler/utils/golang"
 )
 
 type PingMH struct {
@@ -36,12 +35,13 @@ func (m *PingMH) Message(destination *protocol.ServiceID, data []byte, isReply b
 func (m *PingMH) Handle(message *protocol.Message) {
 	inv := &model.Inventory{}
 	inv.UnMarshal(message.Data())
-	if len(inv.Services) > 0 {
-		utils.Info("Reveived Inventory From:", message.Source().String(), " with:")
-		for _, s := range inv.Services {
-			utils.Info("  ", s.String())
-		}
-	}
+	/*
+		if len(inv.Services) > 0 {
+			utils.Info("Reveived Inventory From:", message.Source().String(), " with:")
+			for _, s := range inv.Services {
+				utils.Info("  ", s.String())
+			}
+		}*/
 	m.ms.ServiceManager().ServiceNetwork().UpdateInventory(inv)
 }
 

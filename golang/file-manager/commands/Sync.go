@@ -58,39 +58,64 @@ func (cmd *Sync) HandleCommand(command Command, args []string, conn net.Conn, id
 	console.Write(msg, conn)
 	cmd.createDirectories(descriptor)
 	console.Writeln("Done!", conn)
-	console.Writeln("Start downloading files...", conn)
+	console.Writeln("Start downloading new files...", conn)
 	cmd.conn = conn
-	cmd.copyFiles(descriptor)
+	sr := model.NewSyncReport()
+	cmd.copyFiles(descriptor, sr)
+	report := sr.Report(true)
+	console.Writeln(report, cmd.conn)
+	console.Writeln("Start downloading size diff files...", conn)
+	sideDiff := sr.SizeDiff()
+	sr = model.NewSyncReport()
+	for _, d := range sideDiff {
+		cmd.copyFile(d, sr)
+	}
+	report = sr.Report(true)
+	console.Writeln(report, cmd.conn)
 	return "Done", nil
 }
 
-func (cmd *Sync) copyFiles(descriptor *model.FileDescriptor) {
+func (cmd *Sync) copyFiles(descriptor *model.FileDescriptor, sr *model.SyncReport) {
 	if descriptor.IsDir() {
 		for _, file := range descriptor.Files() {
-			cmd.copyFiles(file)
+			cmd.copyFiles(file, sr)
 		}
 		return
 	}
 
 	if descriptor.Name() == "" {
-		console.Writeln("File "+descriptor.SourcePath()+" does not exit.", cmd.conn)
+		sr.AddErrored(descriptor)
 		return
 	} else if descriptor.Size() == 0 {
-		console.Writeln("File "+descriptor.SourcePath()+" Is Empty.", cmd.conn)
+		sr.AddErrored(descriptor)
 		return
 	}
 
-	if _, err := os.Stat(descriptor.TargetPath()); !os.IsNotExist(err) {
-		request := model.NewFileRequest(descriptor.SourcePath(), 1, true)
-		response := cmd.ls.Request(request, cmd.service.PeerServiceID())
-		descriptor.SetHash(response.(*model.FileDescriptor).Hash())
-		hash, _ := security.FileHash(descriptor.TargetPath())
-		if hash == descriptor.Hash() {
+	exists, err := os.Stat(descriptor.TargetPath())
+
+	if !os.IsNotExist(err) {
+		if descriptor.Size() == exists.Size() {
+			sr.AddExist(descriptor)
+			return
+		} else {
+			sr.AddSizeDiff(descriptor)
 			return
 		}
+		/*
+			request := model.NewFileRequest(descriptor.SourcePath(), 1, true)
+			response := cmd.ls.Request(request, cmd.service.PeerServiceID())
+			descriptor.SetHash(response.(*model.FileDescriptor).Hash())
+			hash, _ := security.FileHash(descriptor.TargetPath())
+			if hash == descriptor.Hash() {
+				return
+			}*/
 	}
 
-	cmd.copyFile(descriptor)
+	cmd.copyFile(descriptor, sr)
+	report := sr.Report(false)
+	if report != "" {
+		console.Writeln(report, cmd.conn)
+	}
 }
 
 func (cmd *Sync) Finished(task utils.JobTask) {
@@ -99,15 +124,15 @@ func (cmd *Sync) Finished(task utils.JobTask) {
 	}
 }
 
-func (cmd *Sync) copyFile(descriptor *model.FileDescriptor) error {
+func (cmd *Sync) copyFile(descriptor *model.FileDescriptor, sr *model.SyncReport) {
 	msg := descriptor.TargetPath() + " (" + strconv.Itoa(int(descriptor.Size())) + "): "
 	console.Write(msg, cmd.conn)
 
 	if _, err := os.Stat(descriptor.TargetPath()); !os.IsNotExist(err) {
 		hash, _ := security.FileHash(descriptor.TargetPath())
 		if hash == descriptor.Hash() {
-			console.Writeln("Exist!", cmd.conn)
-			return nil
+			sr.AddExist(descriptor)
+			return
 		}
 	}
 
@@ -125,8 +150,10 @@ func (cmd *Sync) copyFile(descriptor *model.FileDescriptor) error {
 		}
 		tasks.Run()
 		assemble(descriptor.TargetPath())
-
 	}
+
+	sr.AddCopied(descriptor)
+
 	if descriptor.Hash() != "" {
 		hash, _ := security.FileHash(descriptor.TargetPath())
 		valid := hash == descriptor.Hash()
@@ -138,7 +165,6 @@ func (cmd *Sync) copyFile(descriptor *model.FileDescriptor) error {
 	} else {
 		console.Writeln("Done!", cmd.conn)
 	}
-	return nil
 }
 
 func (cmd *Sync) createDirectories(descriptor *model.FileDescriptor) {
