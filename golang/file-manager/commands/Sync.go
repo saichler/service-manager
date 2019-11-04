@@ -14,14 +14,16 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"time"
 )
 
 type Sync struct {
-	service *FileManagerService
-	cp      IMessageHandler
-	ls      IMessageHandler
-	conn    net.Conn
-	running bool
+	service     *FileManagerService
+	cp          IMessageHandler
+	ls          IMessageHandler
+	conn        net.Conn
+	running     bool
+	currentSize int64
 }
 
 func NewSync(sm IService, cp IMessageHandler, ls IMessageHandler) *Sync {
@@ -135,12 +137,6 @@ func (cmd *Sync) copyFiles(descriptor *model.FileDescriptor, sr *model.SyncRepor
 	}
 }
 
-func (cmd *Sync) Finished(task utils.JobTask) {
-	if cmd.conn != nil {
-		cmd.conn.Write([]byte("."))
-	}
-}
-
 func (cmd *Sync) copyFile(descriptor *model.FileDescriptor, sr *model.SyncReport) {
 	if !cmd.running {
 		return
@@ -162,7 +158,7 @@ func (cmd *Sync) copyFile(descriptor *model.FileDescriptor, sr *model.SyncReport
 		data := cmd.cp.Request(fileData, cmd.service.PeerServiceID()).(*model.FileData)
 		ioutil.WriteFile(descriptor.TargetPath(), data.Data(), 777)
 	} else {
-		tasks := utils.NewJob(1, cmd)
+		tasks := utils.NewJob(1, newCopyFileJobListener(descriptor.TargetPath(), parts, cmd))
 		for i := 0; i < parts; i++ {
 			fileData := model.NewFileData(descriptor.SourcePath(), i, descriptor.Size())
 			fpt := NewFetchPartTask(fileData, descriptor.TargetPath(), cmd.cp, cmd.service)
@@ -275,4 +271,34 @@ func (cmd *Sync) Join(conn net.Conn) {
 func (cmd *Sync) Stop(conn net.Conn) {
 	cmd.running = false
 	console.Writeln("Stop signal was sent", conn)
+}
+
+type CopyFileJobListener struct {
+	filename    string
+	cmd         *Sync
+	finishCount int
+	parts       int
+	lastReport  int64
+}
+
+func newCopyFileJobListener(filename string, parts int, cmd *Sync) *CopyFileJobListener {
+	cpjl := &CopyFileJobListener{}
+	cpjl.filename = filename
+	cpjl.parts = parts
+	cpjl.cmd = cmd
+	cpjl.lastReport = time.Now().Unix()
+	return cpjl
+}
+
+func (jl *CopyFileJobListener) Finished(task utils.JobTask) {
+	jl.finishCount++
+	if jl.cmd.conn != nil {
+		if time.Now().Unix()-jl.lastReport > 30 {
+			p := float64(jl.finishCount) / float64(jl.parts) * 100
+			console.Writeln(jl.filename+" "+strconv.Itoa(int(p))+"%.", jl.cmd.conn)
+			jl.lastReport = time.Now().Unix()
+		} else {
+			console.Write(".", jl.cmd.conn)
+		}
+	}
 }
