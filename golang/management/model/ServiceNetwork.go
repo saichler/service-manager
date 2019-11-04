@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/saichler/messaging/golang/net/protocol"
-	utils "github.com/saichler/utils/golang"
 	"sync"
 )
 
@@ -23,7 +22,7 @@ func (sn *ServiceNetwork) UpdateInventory(inventory *Inventory) bool {
 	defer sn.mtx.Unlock()
 	key := inventory.SID.String()
 	if len(inventory.Services) > 0 {
-		utils.Info("Updating inventory")
+		//utils.Info("Updating inventory")
 		sn.serviceNetwork[key] = inventory
 	}
 	if sn.serviceNetwork[key] == nil {
