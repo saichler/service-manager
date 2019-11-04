@@ -295,7 +295,7 @@ func (jl *CopyFileJobListener) Finished(task utils.JobTask) {
 	if jl.cmd.conn != nil {
 		if time.Now().Unix()-jl.lastReport > 30 {
 			p := float64(jl.finishCount) / float64(jl.parts) * 100
-			console.Writeln(jl.filename+" "+strconv.Itoa(int(p))+"%.", jl.cmd.conn)
+			console.Writeln("\n"+jl.filename+"("+strconv.Itoa(int(p))+"%).", jl.cmd.conn)
 			jl.lastReport = time.Now().Unix()
 		} else {
 			console.Write(".", jl.cmd.conn)
