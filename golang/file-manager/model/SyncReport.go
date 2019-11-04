@@ -93,6 +93,7 @@ func (sr *SyncReport) clone(arr []*FileDescriptor) []*FileDescriptor {
 
 func (sr *SyncReport) Report(ignoreTimeout bool) string {
 	if time.Now().Unix()-sr.lastReport > 30 || ignoreTimeout {
+		sr.lastReport = time.Now().Unix()
 		buff := bytes.Buffer{}
 		buff.WriteString("Sync Report (" + strconv.Itoa(int(time.Now().Unix()-sr.started)) + "):\n")
 		sr.lock.Lock()
