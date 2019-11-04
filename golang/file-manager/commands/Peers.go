@@ -34,7 +34,7 @@ func (c *Peers) ConsoleId() *ConsoleId {
 	return c.service.ConsoleId()
 }
 
-func (c *Peers) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (c *Peers) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 	peers := c.service.ServiceManager().ServiceNetwork().GetPeers(c.service.ServiceID())
 	buff := bytes.Buffer{}
 	for _, peer := range peers {

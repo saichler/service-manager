@@ -35,7 +35,7 @@ func (c *Set) ConsoleId() *ConsoleId {
 	return c.service.ConsoleId()
 }
 
-func (c *Set) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (c *Set) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 	if len(args) == 0 {
 		return c.Usage(), nil
 	}

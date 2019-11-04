@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/saichler/console/golang/console"
 	. "github.com/saichler/console/golang/console/commands"
 	"github.com/saichler/security"
@@ -51,7 +52,7 @@ func (cmd *CP) ConsoleId() *ConsoleId {
 	return cmd.service.ConsoleId()
 }
 
-func (cmd *CP) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (cmd *CP) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 	if len(args) < 2 {
 		return cmd.Usage(), nil
 	}
@@ -163,6 +164,9 @@ func assemble(filename string) {
 			filenames = append(filenames, fp)
 		}
 	}
+
+	fmt.Println(strconv.Itoa(len(filenames)))
+
 	sort.Slice(filenames, func(i, j int) bool {
 		attValueA := filenames[i]
 		attValueB := filenames[j]
@@ -171,11 +175,11 @@ func assemble(filename string) {
 		}
 		return false
 	})
+
 	file, _ := os.Create(filename)
-	file.Close()
-	file, _ = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	for _, fn := range filenames {
 		data, _ := ioutil.ReadFile(fn)
+		fmt.Println(fn, strconv.Itoa(len(data)))
 		file.Write(data)
 		os.Remove(fn)
 	}

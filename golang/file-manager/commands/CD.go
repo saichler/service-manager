@@ -36,7 +36,7 @@ func (cmd *CD) ConsoleId() *ConsoleId {
 	return cmd.service.ConsoleId()
 }
 
-func (cmd *CD) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (cmd *CD) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 
 	if len(args) == 0 {
 		return cmd.Usage(), nil

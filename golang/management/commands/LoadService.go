@@ -15,7 +15,6 @@ func NewLoadService(sm IService) *LoadService {
 	sd.service = sm
 	return sd
 }
-
 func (c *LoadService) Command() string {
 	return "load-service"
 }
@@ -28,7 +27,7 @@ func (c *LoadService) Usage() string {
 func (c *LoadService) ConsoleId() *ConsoleId {
 	return c.service.ConsoleId()
 }
-func (c *LoadService) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (c *LoadService) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 	c.service.ServiceManager().LoadService(args[0])
 	return "", nil
 }

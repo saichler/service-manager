@@ -23,7 +23,6 @@ func NewCD(context interface{}) *CD {
 	}
 	return sd
 }
-
 func (c *CD) Command() string {
 	return "cd"
 }
@@ -40,7 +39,7 @@ func (c *CD) ConsoleId() *ConsoleId {
 	return c.sv.ConsoleId()
 }
 
-func (c *CD) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (c *CD) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 	if len(args) == 0 {
 		if id.Parent() != nil {
 			return "", id.Parent()
@@ -48,9 +47,9 @@ func (c *CD) HandleCommand(command Command, args []string, conn net.Conn, id *Co
 		return "Service name is required", nil
 	}
 	if c.sm != nil {
-		return c.handleServiceManager(command, args, conn, id)
+		return c.handleServiceManager(c, args, conn, id)
 	} else {
-		return c.handleService(command, args, conn, id)
+		return c.handleService(c, args, conn, id)
 	}
 }
 

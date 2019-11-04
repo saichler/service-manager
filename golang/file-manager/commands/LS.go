@@ -37,8 +37,8 @@ func (cmd *LS) ConsoleId() *ConsoleId {
 	return cmd.service.ConsoleId()
 }
 
-func (cmd *LS) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
-	fr := model.NewFileRequest(cmd.service.PeerDir(), 1,false)
+func (cmd *LS) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+	fr := model.NewFileRequest(cmd.service.PeerDir(), 1, false)
 	response := cmd.mh.Request(fr, cmd.service.PeerServiceID())
 	fd := response.(*model.FileDescriptor)
 	buff := bytes.Buffer{}

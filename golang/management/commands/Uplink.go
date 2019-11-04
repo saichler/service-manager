@@ -15,7 +15,6 @@ func NewUplink(ms IService) *Uplink {
 	sd.ms = ms
 	return sd
 }
-
 func (c *Uplink) Command() string {
 	return "uplink"
 }
@@ -28,7 +27,7 @@ func (c *Uplink) Usage() string {
 func (c *Uplink) ConsoleId() *commands.ConsoleId {
 	return c.ms.ConsoleId()
 }
-func (c *Uplink) HandleCommand(command commands.Command, args []string, conn net.Conn, id *commands.ConsoleId) (string, *commands.ConsoleId) {
+func (c *Uplink) HandleCommand(args []string, conn net.Conn, id *commands.ConsoleId) (string, *commands.ConsoleId) {
 	if len(args) == 0 {
 		return "Uplink require a dest ip", nil
 	}

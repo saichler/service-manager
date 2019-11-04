@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"github.com/saichler/console/golang/console"
 	. "github.com/saichler/console/golang/console/commands"
 	"github.com/saichler/security"
@@ -11,6 +12,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"sort"
 	"strconv"
 )
 
@@ -19,6 +21,7 @@ type Sync struct {
 	cp      IMessageHandler
 	ls      IMessageHandler
 	conn    net.Conn
+	running bool
 }
 
 func NewSync(sm IService, cp IMessageHandler, ls IMessageHandler) *Sync {
@@ -45,7 +48,8 @@ func (cmd *Sync) ConsoleId() *ConsoleId {
 	return cmd.service.ConsoleId()
 }
 
-func (cmd *Sync) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (cmd *Sync) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+	cmd.running = true
 	dirRequest := model.NewFileRequest(cmd.service.PeerDir(), 100, false)
 	console.Write("Scanning Remote Directory, this may take a min...", conn)
 	response := cmd.ls.Request(dirRequest, cmd.service.PeerServiceID())
@@ -62,6 +66,9 @@ func (cmd *Sync) HandleCommand(command Command, args []string, conn net.Conn, id
 	cmd.conn = conn
 	sr := model.NewSyncReport()
 	cmd.copyFiles(descriptor, sr)
+	if !cmd.running {
+		return "", nil
+	}
 	report := sr.Report(true)
 	console.Writeln(report, cmd.conn)
 	console.Writeln("Start downloading size diff files...", conn)
@@ -69,6 +76,9 @@ func (cmd *Sync) HandleCommand(command Command, args []string, conn net.Conn, id
 	sr = model.NewSyncReport()
 	for _, d := range sideDiff {
 		cmd.copyFile(d, sr)
+		if !cmd.running {
+			return "", nil
+		}
 	}
 	report = sr.Report(true)
 	console.Writeln(report, cmd.conn)
@@ -79,6 +89,9 @@ func (cmd *Sync) copyFiles(descriptor *model.FileDescriptor, sr *model.SyncRepor
 	if descriptor.IsDir() {
 		for _, file := range descriptor.Files() {
 			cmd.copyFiles(file, sr)
+			if !cmd.running {
+				return
+			}
 		}
 		return
 	}
@@ -88,6 +101,10 @@ func (cmd *Sync) copyFiles(descriptor *model.FileDescriptor, sr *model.SyncRepor
 		return
 	} else if descriptor.Size() == 0 {
 		sr.AddErrored(descriptor)
+		return
+	}
+
+	if !cmd.running {
 		return
 	}
 
@@ -125,6 +142,9 @@ func (cmd *Sync) Finished(task utils.JobTask) {
 }
 
 func (cmd *Sync) copyFile(descriptor *model.FileDescriptor, sr *model.SyncReport) {
+	if !cmd.running {
+		return
+	}
 	msg := descriptor.TargetPath() + " (" + strconv.Itoa(int(descriptor.Size())) + "): "
 	console.Write(msg, cmd.conn)
 
@@ -149,7 +169,7 @@ func (cmd *Sync) copyFile(descriptor *model.FileDescriptor, sr *model.SyncReport
 			tasks.AddTask(fpt)
 		}
 		tasks.Run()
-		assemble(descriptor.TargetPath())
+		assembleFile(descriptor)
 	}
 
 	sr.AddCopied(descriptor)
@@ -198,4 +218,61 @@ func countFilesAndDirectories(fileDescriptor *model.FileDescriptor) (int, int) {
 		files += f
 	}
 	return files, dirs
+}
+
+func assembleFile(descriptor *model.FileDescriptor) {
+	parent := descriptor.TargetParent()
+	if parent == nil {
+		parent = descriptor.SourceParent()
+	}
+
+	dir := parent.TargetPath()
+	filename := descriptor.TargetPath()
+
+	filenames := make([]string, 0)
+	files, _ := ioutil.ReadDir(dir)
+
+	for _, f := range files {
+		buff := bytes.Buffer{}
+		buff.WriteString(dir)
+		buff.WriteString("/")
+		buff.WriteString(f.Name())
+		part := buff.String()
+		if isPartOfFile(part, filename) {
+			filenames = append(filenames, part)
+		}
+	}
+
+	sort.Slice(filenames, func(i, j int) bool {
+		attValueA := filenames[i]
+		attValueB := filenames[j]
+		if attValueA < attValueB {
+			return true
+		}
+		return false
+	})
+
+	file, _ := os.Create(filename)
+	for _, fn := range filenames {
+		data, _ := ioutil.ReadFile(fn)
+		file.Write(data)
+		os.Remove(fn)
+	}
+	file.Close()
+}
+
+func isPartOfFile(f, filename string) bool {
+	if len(f) > len(filename) && f[0:len(filename)] == filename {
+		return true
+	}
+	return false
+}
+
+func (cmd *Sync) Join(conn net.Conn) {
+	cmd.conn = conn
+}
+
+func (cmd *Sync) Stop(conn net.Conn) {
+	cmd.running = false
+	console.Writeln("Stop signal was sent", conn)
 }

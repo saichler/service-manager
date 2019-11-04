@@ -16,7 +16,6 @@ func NewLS(sm *ServiceManager) *LS {
 	sd.sm = sm
 	return sd
 }
-
 func (c *LS) Command() string {
 	return "ls"
 }
@@ -29,7 +28,7 @@ func (c *LS) Usage() string {
 func (c *LS) ConsoleId() *ConsoleId {
 	return c.sm.ConsoleId()
 }
-func (c *LS) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (c *LS) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 	buff := bytes.Buffer{}
 	services := c.sm.Services()
 	for _, service := range services {

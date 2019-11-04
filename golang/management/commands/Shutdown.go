@@ -21,6 +21,7 @@ func NewShutdown(sm IService) *Shutdown {
 func (c *Shutdown) Command() string {
 	return "shutdown"
 }
+
 func (c *Shutdown) Description() string {
 	return "Shutdown the Service Manager"
 }
@@ -30,7 +31,7 @@ func (c *Shutdown) Usage() string {
 func (c *Shutdown) ConsoleId() *ConsoleId {
 	return c.service.ConsoleId()
 }
-func (c *Shutdown) HandleCommand(command Command, args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
+func (c *Shutdown) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (string, *ConsoleId) {
 	Write("Are you sure you want to shutdown "+c.service.ServiceManager().ConsoleId().ID()+" (yes/no)?", conn)
 	reply, _ := Read(conn)
 	reply = strings.ToLower(reply)
