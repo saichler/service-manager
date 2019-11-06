@@ -137,6 +137,12 @@ func (cmd *Sync) copyFiles(descriptor *model.FileDescriptor, sr *model.SyncRepor
 	}
 }
 
+func (cmd *Sync) copySmallFile(descriptor *model.FileDescriptor) {
+	fileData := model.NewFileData(descriptor.SourcePath(), 0, descriptor.Size())
+	data := cmd.cp.Request(fileData, cmd.service.PeerServiceID()).(*model.FileData)
+	ioutil.WriteFile(descriptor.TargetPath(), data.Data(), 777)
+}
+
 func (cmd *Sync) copyFile(descriptor *model.FileDescriptor, sr *model.SyncReport) {
 	if !cmd.running {
 		return
@@ -154,11 +160,9 @@ func (cmd *Sync) copyFile(descriptor *model.FileDescriptor, sr *model.SyncReport
 
 	parts := descriptor.Parts()
 	if parts == 1 {
-		fileData := model.NewFileData(descriptor.SourcePath(), 0, descriptor.Size())
-		data := cmd.cp.Request(fileData, cmd.service.PeerServiceID()).(*model.FileData)
-		ioutil.WriteFile(descriptor.TargetPath(), data.Data(), 777)
+		go cmd.copySmallFile(descriptor)
 	} else {
-		tasks := utils.NewJob(1, newCopyFileJobListener(descriptor.TargetPath(), parts, cmd))
+		tasks := utils.NewJob(5, newCopyFileJobListener(descriptor.TargetPath(), parts, cmd))
 		for i := 0; i < parts; i++ {
 			fileData := model.NewFileData(descriptor.SourcePath(), i, descriptor.Size())
 			fpt := NewFetchPartTask(fileData, descriptor.TargetPath(), cmd.cp, cmd.service)
