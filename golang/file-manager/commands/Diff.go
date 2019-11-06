@@ -48,13 +48,17 @@ func (cmd *Diff) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (str
 	aSideMissing, zSideMissing := diff(aside, zside)
 	buff := bytes.Buffer{}
 	buff.WriteString("Remote missing files:\n")
-	for name, _ := range aSideMissing {
+	for name, name2 := range aSideMissing {
 		buff.WriteString(name)
+		buff.WriteString(" - ")
+		buff.WriteString(name2)
 		buff.WriteString("\n")
 	}
 	buff.WriteString("Local missing files:\n")
-	for name, _ := range zSideMissing {
+	for name, name2 := range zSideMissing {
 		buff.WriteString(name)
+		buff.WriteString(" - ")
+		buff.WriteString(name2)
 		buff.WriteString("\n")
 	}
 	return buff.String(), nil
@@ -73,11 +77,11 @@ func diff(aside, zside *model.FileDescriptor) (map[string]string, map[string]str
 
 func deepDiff(aside, zside, aSideRoot, zSideRoot *model.FileDescriptor, aSideMissing, zSideMissing map[string]string) {
 	if aside == nil && zside != nil {
-		aSideMissing[zside.SourcePath()] = zside.SourcePath()
+		aSideMissing[zside.SourcePath()] = zside.TargetPath()
 		return
 	}
 	if aside != nil && zside == nil {
-		zSideMissing[aside.SourcePath()] = aside.SourcePath()
+		zSideMissing[aside.SourcePath()] = aside.TargetPath()
 		return
 	}
 
