@@ -77,7 +77,7 @@ func (cmd *Sync) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (str
 	sideDiff := sr.SizeDiff()
 	sr = model.NewSyncReport()
 	for _, d := range sideDiff {
-		cmd.copyFile(d, sr)
+		cmd.copyFile(d, sr, true)
 		if !cmd.running {
 			return "", nil
 		}
@@ -99,10 +99,10 @@ func (cmd *Sync) copyFiles(descriptor *model.FileDescriptor, sr *model.SyncRepor
 	}
 
 	if descriptor.Name() == "" {
-		sr.AddErrored(descriptor)
+		sr.AddErrored("File does not exist.", descriptor)
 		return
 	} else if descriptor.Size() == 0 {
-		sr.AddErrored(descriptor)
+		sr.AddErrored("File size is 0", descriptor)
 		return
 	}
 
@@ -130,7 +130,7 @@ func (cmd *Sync) copyFiles(descriptor *model.FileDescriptor, sr *model.SyncRepor
 			}*/
 	}
 
-	cmd.copyFile(descriptor, sr)
+	cmd.copyFile(descriptor, sr, false)
 	report := sr.Report(false)
 	if report != "" {
 		console.Writeln(report, cmd.conn)
@@ -143,14 +143,14 @@ func (cmd *Sync) copySmallFile(descriptor *model.FileDescriptor) {
 	ioutil.WriteFile(descriptor.TargetPath(), data.Data(), 777)
 }
 
-func (cmd *Sync) copyFile(descriptor *model.FileDescriptor, sr *model.SyncReport) {
+func (cmd *Sync) copyFile(descriptor *model.FileDescriptor, sr *model.SyncReport, forceCopy bool) {
 	if !cmd.running {
 		return
 	}
 	msg := descriptor.TargetPath() + " (" + strconv.Itoa(int(descriptor.Size())) + "): "
 	console.Write(msg, cmd.conn)
 
-	if _, err := os.Stat(descriptor.TargetPath()); !os.IsNotExist(err) {
+	if _, err := os.Stat(descriptor.TargetPath()); !forceCopy && !os.IsNotExist(err) {
 		hash, _ := security.FileHash(descriptor.TargetPath())
 		if hash == descriptor.Hash() {
 			sr.AddExist(descriptor)

@@ -10,7 +10,7 @@ import (
 type SyncReport struct {
 	exists     []*FileDescriptor
 	copied     []*FileDescriptor
-	errored    []*FileDescriptor
+	errored    map[string][]*FileDescriptor
 	sizeDiff   []*FileDescriptor
 	hashDiff   []*FileDescriptor
 	lastReport int64
@@ -24,7 +24,7 @@ func NewSyncReport() *SyncReport {
 	sr.started = sr.lastReport
 	sr.exists = make([]*FileDescriptor, 0)
 	sr.copied = make([]*FileDescriptor, 0)
-	sr.errored = make([]*FileDescriptor, 0)
+	sr.errored = make(map[string][]*FileDescriptor, 0)
 	sr.sizeDiff = make([]*FileDescriptor, 0)
 	sr.hashDiff = make([]*FileDescriptor, 0)
 	sr.lock = &sync.Mutex{}
@@ -43,10 +43,14 @@ func (sr *SyncReport) AddCopied(descriptor *FileDescriptor) {
 	sr.copied = append(sr.copied, descriptor)
 }
 
-func (sr *SyncReport) AddErrored(descriptor *FileDescriptor) {
+func (sr *SyncReport) AddErrored(msg string, descriptor *FileDescriptor) {
 	sr.lock.Lock()
 	defer sr.lock.Unlock()
-	sr.errored = append(sr.errored, descriptor)
+	_, ok := sr.errored[msg]
+	if !ok {
+		sr.errored[msg] = make([]*FileDescriptor, 0)
+	}
+	sr.errored[msg] = append(sr.errored[msg], descriptor)
 }
 
 func (sr *SyncReport) AddSizeDiff(descriptor *FileDescriptor) {
@@ -67,10 +71,6 @@ func (sr *SyncReport) Exists() []*FileDescriptor {
 
 func (sr *SyncReport) Copied() []*FileDescriptor {
 	return sr.clone(sr.copied)
-}
-
-func (sr *SyncReport) Errored() []*FileDescriptor {
-	return sr.clone(sr.errored)
 }
 
 func (sr *SyncReport) SizeDiff() []*FileDescriptor {
@@ -104,15 +104,18 @@ func (sr *SyncReport) Report(ignoreTimeout bool) string {
 		buff.WriteString("Copied: ")
 		buff.WriteString(strconv.Itoa(len(sr.copied)))
 		buff.WriteString("\n")
-		buff.WriteString("Errored: ")
-		buff.WriteString(strconv.Itoa(len(sr.errored)))
-		buff.WriteString("\n")
 		buff.WriteString("SizeDiff: ")
 		buff.WriteString(strconv.Itoa(len(sr.sizeDiff)))
 		buff.WriteString("\n")
 		buff.WriteString("HashDiff: ")
 		buff.WriteString(strconv.Itoa(len(sr.hashDiff)))
 		buff.WriteString("\n")
+		for msg, list := range sr.errored {
+			buff.WriteString(msg)
+			buff.WriteString(" Errored: ")
+			buff.WriteString(strconv.Itoa(len(list)))
+			buff.WriteString("\n")
+		}
 		return buff.String()
 	}
 	return ""
