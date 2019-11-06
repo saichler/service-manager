@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/saichler/console/golang/console"
 	. "github.com/saichler/console/golang/console/commands"
 	"github.com/saichler/service-manager/golang/file-manager/model"
@@ -67,8 +68,14 @@ func (cmd *Diff) HandleCommand(args []string, conn net.Conn, id *ConsoleId) (str
 func diff(aside, zside *model.FileDescriptor) (map[string]string, map[string]string) {
 	zsideTarget := model.NewFileDescriptor(aside.SourceParent().SourcePath(), 0, false)
 	asideTarget := model.NewFileDescriptor(zside.SourceParent().SourcePath(), 0, false)
+	fmt.Println(zsideTarget.SourcePath())
+	fmt.Println(asideTarget.SourcePath())
 	aside.SetTargetParent(zsideTarget)
 	zside.SetTargetParent(asideTarget)
+
+	fmt.Println(zsideTarget.TargetPath())
+	fmt.Println(asideTarget.TargetPath())
+	
 	aSideMissing := make(map[string]string)
 	zSideMissing := make(map[string]string)
 	deepDiff(aside, zside, aside.SourceRoot(), zside.SourceRoot(), aSideMissing, zSideMissing)
