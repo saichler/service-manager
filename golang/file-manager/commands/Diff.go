@@ -70,8 +70,8 @@ func diff(aside, zside *model.FileDescriptor) (map[string]string, map[string]str
 	asideTarget := model.NewFileDescriptor(zside.SourceParent().SourcePath(), 0, false)
 	fmt.Println(aside.SourcePath())
 	fmt.Println(zside.SourcePath())
-	aside.SetTargetParent(zsideTarget)
-	zside.SetTargetParent(asideTarget)
+	aside.SetTargetParent(asideTarget)
+	zside.SetTargetParent(zsideTarget)
 	fmt.Println(aside.TargetPath())
 	fmt.Println(zside.TargetPath())
 
