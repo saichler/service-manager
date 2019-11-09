@@ -5,7 +5,7 @@ import (
 	"github.com/saichler/console/golang/console/commands"
 	. "github.com/saichler/messaging/golang/net/netnode"
 	. "github.com/saichler/messaging/golang/net/protocol"
-	"github.com/saichler/service-manager/golang/management/model"
+	"github.com/saichler/service-management-service/golang/management-service/model"
 
 	//	commands2 "github.com/saichler/service-manager/golang/management/commands"
 	. "github.com/saichler/utils/golang"

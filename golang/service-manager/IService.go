@@ -30,5 +30,5 @@ type IMessageHandler interface {
 	Topic() string
 	Message(*ServiceID, []byte, bool) *Message
 	Init()
-	Request(interface{}, *ServiceID) interface{}
+	Request(args ...interface{}) (interface{}, error)
 }
